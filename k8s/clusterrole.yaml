@@ -1,0 +1,22 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: k8s-athenz-syncer
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - athenz.io
+  resources:
+  - athenzdomains
+  verbs:
+  - create
+  - update
+  - delete
+  - watch
+  - list

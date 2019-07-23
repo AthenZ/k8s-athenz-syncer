@@ -1,0 +1,168 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-athenz-syncer
+  namespace: kube-yahoo
+  labels:
+    app: k8s-athenz-syncer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8s-athenz-syncer
+  strategy:
+    rollingUpdate:
+      maxSurge: 50%
+      maxUnavailable: 0%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: k8s-athenz-syncer
+    spec:
+      initContainers:
+      - args:
+        - --mode=init
+        - --endpoint=unix:///identity/connect/agent.sock
+        command:
+        - /usr/bin/athenz-sia
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: POD_UID
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.uid
+        - name: SERVICEACCOUNT
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.serviceAccountName
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.hostIP
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        image: local/k8s-athenz-sia
+        imagePullPolicy: IfNotPresent
+        name: sia-init-v3
+        resources:
+          limits:
+            cpu: 100m
+            memory: 500Mi
+          requests:
+            cpu: 100m
+            memory: 500Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/run/athenz
+          name: tls-certs
+        - mountPath: /identity
+          name: sia-identity
+          readOnly: true
+      containers:
+      - name: main
+        image: local/k8s-athenz-syncer
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            cpu: 1
+            memory: 1Gi
+          requests:
+            cpu: 1
+            memory: 1Gi
+        args:
+        - --zms-url=https://zms.url.com/zms/v1
+        volumeMounts:
+        - name: tls-certs
+          mountPath: /var/run/athenz
+          readOnly: true
+      - args:
+        - --mode=refresh
+        - --endpoint=unix:///identity/connect/agent.sock
+        - --refresh-interval=24h
+        command:
+        - /usr/bin/athenz-sia
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: POD_UID
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.uid
+        - name: SERVICEACCOUNT
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.serviceAccountName
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.hostIP
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        image: local/k8s-athenz-sia
+        imagePullPolicy: IfNotPresent
+        name: sia-v3
+        resources:
+          limits:
+            cpu: 100m
+            memory: 500Mi
+          requests:
+            cpu: 100m
+            memory: 500Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/run/athenz
+          name: tls-certs
+        - mountPath: /identity
+          name: sia-identity
+          readOnly: true
+      priorityClassName: cluster-component
+      serviceAccountName: k8s-athenz-syncer
+      volumes:
+      - name: tls-certs
+        emptyDir: {}
+      - name: sia-identity
+        flexVolume:
+          driver: athenz.kubernetes.io/athenz-volume-driver
+          readOnly: true
