@@ -19,11 +19,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cenkalti/backoff"
+	"github.com/yahoo/athenz/clients/go/zms"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/cr"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/util"
-	"github.com/cenkalti/backoff"
-	"github.com/yahoo/athenz/clients/go/zms"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
