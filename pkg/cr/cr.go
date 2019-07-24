@@ -8,7 +8,6 @@ import (
 
 	"github.com/yahoo/athenz/clients/go/zms"
 	athenz_domain "github.com/yahoo/k8s-athenz-syncer/pkg/apis/athenz/v1"
-	v1 "github.com/yahoo/k8s-athenz-syncer/pkg/apis/athenz/v1"
 	athenzClientset "github.com/yahoo/k8s-athenz-syncer/pkg/client/clientset/versioned"
 	athenzclient "github.com/yahoo/k8s-athenz-syncer/pkg/client/clientset/versioned/typed/athenz/v1"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
@@ -47,9 +46,12 @@ func (c *CRUtil) CreateUpdateAthenzDomain(domain string, domainData *zms.SignedD
 		Spec: athenz_domain.AthenzDomainSpec{
 			SignedDomain: *domainData,
 		},
+		Status: athenz_domain.AthenzDomainStatus{
+			Message: "",
+		},
 	}
 
-	obj, exist, err := c.getCRByName(domain)
+	obj, exist, err := c.GetCRByName(domain)
 	if err != nil {
 		return nil, fmt.Errorf("Did not find key in store. Error while looking up for key: %v", err)
 	}
@@ -76,7 +78,7 @@ func (c *CRUtil) updateCR(object *athenz_domain.AthenzDomain, newCR *athenz_doma
 	newObjCopy.Signature = ""
 	newObjCopy.Domain.Policies.Signature = ""
 	eql := reflect.DeepEqual(oldObjCopy, newObjCopy)
-	if eql {
+	if eql && object.Status.Message == "" {
 		log.Info("AthenzDomain CR is up to date, skipping CR update.")
 		return nil, nil
 	}
@@ -85,8 +87,8 @@ func (c *CRUtil) updateCR(object *athenz_domain.AthenzDomain, newCR *athenz_doma
 	return c.athenzClientset.AthenzDomains().Update(newCR)
 }
 
-// getCRByName - get AthenzDomain CR by domain
-func (c *CRUtil) getCRByName(domain string) (*athenz_domain.AthenzDomain, bool, error) {
+// GetCRByName - get AthenzDomain CR by domain
+func (c *CRUtil) GetCRByName(domain string) (*athenz_domain.AthenzDomain, bool, error) {
 	store := c.CrIndexInformer.GetStore()
 	// Store.GetByKey() will always return a nil for error field
 	object, exist, _ := store.GetByKey(domain)
@@ -102,7 +104,7 @@ func (c *CRUtil) getCRByName(domain string) (*athenz_domain.AthenzDomain, bool, 
 
 // RemoveAthenzDomain - delete AthenzDomain CR from Cluster
 func (c *CRUtil) RemoveAthenzDomain(domain string) error {
-	obj, exist, err := c.getCRByName(domain)
+	obj, exist, err := c.GetCRByName(domain)
 	if err != nil {
 		log.Infof("Error occurred in getCRByName function. Error: %v", err)
 		return err
@@ -127,7 +129,7 @@ func (c *CRUtil) GetLatestTimestamp() string {
 		return ""
 	}
 	for _, domain := range crs {
-		cr, ok := domain.(*v1.AthenzDomain)
+		cr, ok := domain.(*athenz_domain.AthenzDomain)
 		if !ok {
 			return ""
 		}
@@ -182,4 +184,12 @@ func TrustDomainIndexFunc(obj interface{}) ([]string, error) {
 		}
 	}
 	return trustDomains, nil
+}
+
+// AddErrorStatus - add error status field in CR when zms call returns error
+func (c *CRUtil) AddErrorStatus(obj *athenz_domain.AthenzDomain) {
+	_, err := c.athenzClientset.AthenzDomains().Update(obj)
+	if err != nil {
+		log.Error(err)
+	}
 }

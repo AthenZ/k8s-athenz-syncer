@@ -59,7 +59,7 @@ func newCron() *Cron {
 		Name: "home-test",
 	}})
 	cr := cr.NewCRUtil(athenzclientset, informer)
-	return NewCron(20*time.Second, time.Minute, etag, &zmsClient, nsIndexInformer, queue, util, cr)
+	return NewCron(clientset, 20*time.Second, time.Minute, etag, &zmsClient, nsIndexInformer, queue, util, cr)
 }
 
 func TestRequestCall(t *testing.T) {

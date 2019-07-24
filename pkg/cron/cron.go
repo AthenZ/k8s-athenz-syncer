@@ -19,12 +19,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cenkalti/backoff"
+	"github.com/yahoo/athenz/clients/go/zms"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/cr"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/util"
-	"github.com/cenkalti/backoff"
-	"github.com/yahoo/athenz/clients/go/zms"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 )
@@ -33,6 +35,7 @@ const trustDomainIndexKey = "trustDomain"
 
 // Cron type for cron updates
 type Cron struct {
+	k8sClient     kubernetes.Interface
 	checkInterval time.Duration
 	syncInterval  time.Duration
 	etag          string
@@ -44,8 +47,9 @@ type Cron struct {
 }
 
 // NewCron - creates new cron object
-func NewCron(checkInterval time.Duration, syncInterval time.Duration, etag string, zmsClient *zms.ZMSClient, informer cache.SharedIndexInformer, queue workqueue.RateLimitingInterface, util *util.Util, cr *cr.CRUtil) *Cron {
+func NewCron(k8sClient kubernetes.Interface, checkInterval time.Duration, syncInterval time.Duration, etag string, zmsClient *zms.ZMSClient, informer cache.SharedIndexInformer, queue workqueue.RateLimitingInterface, util *util.Util, cr *cr.CRUtil) *Cron {
 	return &Cron{
+		k8sClient:     k8sClient,
 		checkInterval: checkInterval,
 		syncInterval:  syncInterval,
 		etag:          etag,
@@ -93,6 +97,13 @@ func (c *Cron) requestCall() error {
 	}
 	if etag != "" {
 		c.etag = etag
+		configmap := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "athenzcall-config",
+			},
+			Data: map[string]string{"latest_contact": etag},
+		}
+		c.k8sClient.CoreV1().ConfigMaps("kube-yahoo").Update(configmap)
 	}
 	return nil
 }
