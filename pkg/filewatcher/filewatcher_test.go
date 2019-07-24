@@ -21,9 +21,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
 	"github.com/fsnotify/fsnotify"
 	"github.com/stretchr/testify/assert"
+	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
 )
 
 type fakeReloader struct {
