@@ -34,9 +34,9 @@ import (
 
 const (
 	trustDomainIndexKey = "trustDomain"
-	configMapLoc        = "kube-yahoo"
-	configMapName       = "athenzcall-config"
-	configMapKey        = "latest_contact"
+	athenzMapLoc        = "kube-yahoo"
+	athenzMapName       = "athenzcall-config"
+	athenzMapKey        = "latest_contact"
 )
 
 // Cron type for cron updates
@@ -103,20 +103,7 @@ func (c *Cron) requestCall() error {
 	}
 	if etag != "" {
 		c.etag = etag
-		exists := c.CheckConfigMap()
-		if !exists {
-			c.CreateConfigMap()
-		}
-		configmap := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "athenzcall-config",
-			},
-			Data: map[string]string{"latest_contact": etag},
-		}
-		_, err := c.k8sClient.CoreV1().ConfigMaps("kube-yahoo").Update(configmap)
-		if err != nil {
-			log.Errorf("Unable to update latest timestamp in Config Map. Error: %v", err)
-		}
+		c.UpdateAthenzContactTime(etag)
 	}
 	return nil
 }
@@ -201,29 +188,27 @@ func (c *Cron) ValidateDomain(domain string) bool {
 	return false
 }
 
-// CheckConfigMap - check if config map exists in k8s cluster
-func (c *Cron) CheckConfigMap() bool {
-	configMap, err := c.k8sClient.CoreV1().ConfigMaps(configMapLoc).Get(configMapName, metav1.GetOptions{})
-	if err != nil || apiError.IsNotFound(err) {
-		return false
-	}
-	if configMap != nil {
-		return true
-	}
-	return false
-}
-
-// CreateConfigMap - create new config map in k8s cluster
-func (c *Cron) CreateConfigMap() *corev1.ConfigMap {
+// UpdateAthenzContactTime - update the latest athenz contact timestamp in config map
+func (c *Cron) UpdateAthenzContactTime(etag string) {
 	configmap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: configMapName,
+			Name: athenzMapName,
 		},
-		Data: map[string]string{configMapKey: ""},
+		Data: map[string]string{athenzMapKey: etag},
 	}
-	configMap, err := c.k8sClient.CoreV1().ConfigMaps("kube-yahoo").Create(configmap)
-	if err != nil {
-		log.Errorf("Error occurred when creating new config map. Error: %v", err)
+	configMap, err := c.k8sClient.CoreV1().ConfigMaps(athenzMapLoc).Get(athenzMapName, metav1.GetOptions{})
+	if err != nil && apiError.IsNotFound(err) {
+		configMap, err = c.k8sClient.CoreV1().ConfigMaps(athenzMapLoc).Create(configmap)
+		if err != nil {
+			log.Errorf("Error occurred when creating new config map. Error: %v", err)
+		}
+	} else if err != nil {
+		log.Errorf("Error occurred during GET config map. Error: %v", err)
+		return
+	} else if configMap != nil {
+		_, err := c.k8sClient.CoreV1().ConfigMaps(athenzMapLoc).Update(configmap)
+		if err != nil {
+			log.Errorf("Unable to update latest timestamp in Config Map. Error: %v", err)
+		}
 	}
-	return configMap
 }

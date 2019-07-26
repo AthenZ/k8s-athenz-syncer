@@ -166,12 +166,6 @@ func (c *Controller) Run(stopCh <-chan struct{}) {
 	// add all admin domain and system namespaces to the queue initially
 	c.cron.AddAdminSystemDomains()
 
-	// create a configmap for the latest timestamp to contact zms
-	exists := c.cron.CheckConfigMap()
-	if !exists {
-		c.cron.CreateConfigMap()
-	}
-
 	// run the runWorker method every second with a stop channel
 	wait.Until(c.runWorker, time.Second, stopCh)
 }

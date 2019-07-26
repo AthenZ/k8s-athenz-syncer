@@ -154,3 +154,19 @@ func TestValidateDomain(t *testing.T) {
 		t.Error("test.domain.kube-system is a valid domain")
 	}
 }
+
+// UpdateAthenzContactTime - test for update athenz contact time in configmap
+func TestUpdateAthenzContactTime(t *testing.T) {
+	c := newCron()
+	log.InitLogger("/tmp/log/test.log", "info")
+	configMapLoc := "kube-yahoo"
+	configMapName := "athenzcall-config"
+	c.UpdateAthenzContactTime("2019-01-01T01:01:01.111Z")
+	configMap, err := c.k8sClient.CoreV1().ConfigMaps(configMapLoc).Get(configMapName, metav1.GetOptions{})
+	if err != nil {
+		t.Error(err)
+	}
+	if configMap == nil {
+		t.Error("New config map created should not be nil")
+	}
+}
