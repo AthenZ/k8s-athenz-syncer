@@ -24,8 +24,6 @@ import (
 	"github.com/yahoo/k8s-athenz-syncer/pkg/cr"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
 	corev1 "k8s.io/api/core/v1"
-	apiErrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -169,20 +167,10 @@ func (c *Controller) Run(stopCh <-chan struct{}) {
 	c.cron.AddAdminSystemDomains()
 
 	// create a configmap for the latest timestamp to contact zms
-	_, err := c.clientset.CoreV1().ConfigMaps("kube-yahoo").Get("athenzcall-config", metav1.GetOptions{})
-	if apiErrors.IsNotFound(err) {
-		configmap := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "athenzcall-config",
-			},
-			Data: map[string]string{"latest_contact": timestamp},
-		}
-		_, err = c.clientset.CoreV1().ConfigMaps("kube-yahoo").Create(configmap)
+	exists := c.cron.CheckConfigMap()
+	if !exists {
+		c.cron.CreateConfigMap()
 	}
-	if err != nil && !apiErrors.IsNotFound(err) {
-		log.Errorf("Unable to create config map. Error: %v", err)
-	}
-	log.Info("Controller.Run: new configMap created")
 
 	// run the runWorker method every second with a stop channel
 	wait.Until(c.runWorker, time.Second, stopCh)
@@ -260,10 +248,13 @@ func (c *Controller) sync(domain string) error {
 		if rdl.Code == 404 {
 			return c.cr.RemoveAthenzDomain(domain)
 		}
-		obj, e, _ := c.cr.GetCRByName(domain)
-		if e && obj.Status.Message == "" {
+		obj, exists, err := c.cr.GetCRByName(domain)
+		if err != nil {
+			return err
+		}
+		if exists {
 			obj.Status.Message = err.Error()
-			c.cr.AddErrorStatus(obj)
+			c.cr.UpdateErrorStatus(obj)
 		}
 		return err
 	}

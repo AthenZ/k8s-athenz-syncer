@@ -186,8 +186,8 @@ func TrustDomainIndexFunc(obj interface{}) ([]string, error) {
 	return trustDomains, nil
 }
 
-// AddErrorStatus - add error status field in CR when zms call returns error
-func (c *CRUtil) AddErrorStatus(obj *athenz_domain.AthenzDomain) {
+// UpdateErrorStatus - add error status field in CR when zms call returns error
+func (c *CRUtil) UpdateErrorStatus(obj *athenz_domain.AthenzDomain) {
 	_, err := c.athenzClientset.AthenzDomains().Update(obj)
 	if err != nil {
 		log.Error(err)

@@ -25,13 +25,19 @@ import (
 	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/util"
 	corev1 "k8s.io/api/core/v1"
+	apiError "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 )
 
-const trustDomainIndexKey = "trustDomain"
+const (
+	trustDomainIndexKey = "trustDomain"
+	configMapLoc        = "kube-yahoo"
+	configMapName       = "athenzcall-config"
+	configMapKey        = "latest_contact"
+)
 
 // Cron type for cron updates
 type Cron struct {
@@ -97,13 +103,20 @@ func (c *Cron) requestCall() error {
 	}
 	if etag != "" {
 		c.etag = etag
+		exists := c.CheckConfigMap()
+		if !exists {
+			c.CreateConfigMap()
+		}
 		configmap := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "athenzcall-config",
 			},
 			Data: map[string]string{"latest_contact": etag},
 		}
-		c.k8sClient.CoreV1().ConfigMaps("kube-yahoo").Update(configmap)
+		_, err := c.k8sClient.CoreV1().ConfigMaps("kube-yahoo").Update(configmap)
+		if err != nil {
+			log.Errorf("Unable to update latest timestamp in Config Map. Error: %v", err)
+		}
 	}
 	return nil
 }
@@ -186,4 +199,31 @@ func (c *Cron) ValidateDomain(domain string) bool {
 		return true
 	}
 	return false
+}
+
+// CheckConfigMap - check if config map exists in k8s cluster
+func (c *Cron) CheckConfigMap() bool {
+	configMap, err := c.k8sClient.CoreV1().ConfigMaps(configMapLoc).Get(configMapName, metav1.GetOptions{})
+	if err != nil || apiError.IsNotFound(err) {
+		return false
+	}
+	if configMap != nil {
+		return true
+	}
+	return false
+}
+
+// CreateConfigMap - create new config map in k8s cluster
+func (c *Cron) CreateConfigMap() *corev1.ConfigMap {
+	configmap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: configMapName,
+		},
+		Data: map[string]string{configMapKey: ""},
+	}
+	configMap, err := c.k8sClient.CoreV1().ConfigMaps("kube-yahoo").Create(configmap)
+	if err != nil {
+		log.Errorf("Error occurred when creating new config map. Error: %v", err)
+	}
+	return configMap
 }
