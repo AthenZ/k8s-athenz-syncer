@@ -159,14 +159,17 @@ func TestValidateDomain(t *testing.T) {
 func TestUpdateAthenzContactTime(t *testing.T) {
 	c := newCron()
 	log.InitLogger("/tmp/log/test.log", "info")
-	configMapLoc := "kube-yahoo"
-	configMapName := "athenzcall-config"
 	c.UpdateAthenzContactTime("2019-01-01T01:01:01.111Z")
-	configMap, err := c.k8sClient.CoreV1().ConfigMaps(configMapLoc).Get(configMapName, metav1.GetOptions{})
+	configMap, err := c.k8sClient.CoreV1().ConfigMaps(athenzMapLoc).Get(athenzMapName, metav1.GetOptions{})
 	if err != nil {
 		t.Error(err)
 	}
 	if configMap == nil {
 		t.Error("New config map created should not be nil")
+	}
+	c.UpdateAthenzContactTime("2020-02-02T01:01:01.111Z")
+	configMap, err = c.k8sClient.CoreV1().ConfigMaps(athenzMapLoc).Get(athenzMapName, metav1.GetOptions{})
+	if configMap.Data[athenzMapKey] != "2020-02-02T01:01:01.111Z" {
+		t.Error("Failed to update the latest timestamp")
 	}
 }

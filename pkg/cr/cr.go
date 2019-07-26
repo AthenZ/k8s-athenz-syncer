@@ -78,7 +78,8 @@ func (c *CRUtil) updateCR(object *athenz_domain.AthenzDomain, newCR *athenz_doma
 	newObjCopy.Signature = ""
 	newObjCopy.Domain.Policies.Signature = ""
 	eql := reflect.DeepEqual(oldObjCopy, newObjCopy)
-	if eql && object.Status.Message == "" {
+	statusEql := reflect.DeepEqual(object.Status, newCR.Status)
+	if eql && statusEql {
 		log.Info("AthenzDomain CR is up to date, skipping CR update.")
 		return nil, nil
 	}
