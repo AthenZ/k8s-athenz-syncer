@@ -92,7 +92,7 @@ func NewController(k8sClient kubernetes.Interface, versiondClient athenzClientse
 		trustDomainIndexKey: cr.TrustDomainIndexFunc,
 	})
 	c.cr = cr.NewCRUtil(versiondClient, crIndexInformer)
-	c.cron = cron.NewCron(updateCron, resyncCron, "", zmsClient, nsIndexInformer, queue, util, c.cr)
+	c.cron = cron.NewCron(k8sClient, updateCron, resyncCron, "", zmsClient, nsIndexInformer, queue, util, c.cr)
 	return c
 }
 
@@ -241,6 +241,14 @@ func (c *Controller) sync(domain string) error {
 		// if return 404 error, remove AthenzDomains CR
 		if rdl.Code == 404 {
 			return c.cr.RemoveAthenzDomain(domain)
+		}
+		obj, exists, err := c.cr.GetCRByName(domain)
+		if err != nil {
+			return err
+		}
+		if exists {
+			obj.Status.Message = err.Error()
+			c.cr.UpdateErrorStatus(obj)
 		}
 		return err
 	}
