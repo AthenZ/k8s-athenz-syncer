@@ -21,11 +21,11 @@ package v1
 import (
 	time "time"
 
-	athenz_v1 "github.com/yahoo/k8s-athenz-syncer/pkg/apis/athenz/v1"
+	athenzv1 "github.com/yahoo/k8s-athenz-syncer/pkg/apis/athenz/v1"
 	versioned "github.com/yahoo/k8s-athenz-syncer/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/yahoo/k8s-athenz-syncer/pkg/client/informers/externalversions/internalinterfaces"
 	v1 "github.com/yahoo/k8s-athenz-syncer/pkg/client/listers/athenz/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
@@ -56,20 +56,20 @@ func NewAthenzDomainInformer(client versioned.Interface, resyncPeriod time.Durat
 func NewFilteredAthenzDomainInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
-			ListFunc: func(options meta_v1.ListOptions) (runtime.Object, error) {
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
 				return client.AthenzV1().AthenzDomains().List(options)
 			},
-			WatchFunc: func(options meta_v1.ListOptions) (watch.Interface, error) {
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
 				return client.AthenzV1().AthenzDomains().Watch(options)
 			},
 		},
-		&athenz_v1.AthenzDomain{},
+		&athenzv1.AthenzDomain{},
 		resyncPeriod,
 		indexers,
 	)
@@ -80,7 +80,7 @@ func (f *athenzDomainInformer) defaultInformer(client versioned.Interface, resyn
 }
 
 func (f *athenzDomainInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&athenz_v1.AthenzDomain{}, f.defaultInformer)
+	return f.factory.InformerFor(&athenzv1.AthenzDomain{}, f.defaultInformer)
 }
 
 func (f *athenzDomainInformer) Lister() v1.AthenzDomainLister {

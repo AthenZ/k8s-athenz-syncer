@@ -19,9 +19,11 @@ limitations under the License.
 package v1
 
 import (
+	"time"
+
 	v1 "github.com/yahoo/k8s-athenz-syncer/pkg/apis/athenz/v1"
 	scheme "github.com/yahoo/k8s-athenz-syncer/pkg/client/clientset/versioned/scheme"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	rest "k8s.io/client-go/rest"
@@ -37,11 +39,11 @@ type AthenzDomainsGetter interface {
 type AthenzDomainInterface interface {
 	Create(*v1.AthenzDomain) (*v1.AthenzDomain, error)
 	Update(*v1.AthenzDomain) (*v1.AthenzDomain, error)
-	Delete(name string, options *meta_v1.DeleteOptions) error
-	DeleteCollection(options *meta_v1.DeleteOptions, listOptions meta_v1.ListOptions) error
-	Get(name string, options meta_v1.GetOptions) (*v1.AthenzDomain, error)
-	List(opts meta_v1.ListOptions) (*v1.AthenzDomainList, error)
-	Watch(opts meta_v1.ListOptions) (watch.Interface, error)
+	Delete(name string, options *metav1.DeleteOptions) error
+	DeleteCollection(options *metav1.DeleteOptions, listOptions metav1.ListOptions) error
+	Get(name string, options metav1.GetOptions) (*v1.AthenzDomain, error)
+	List(opts metav1.ListOptions) (*v1.AthenzDomainList, error)
+	Watch(opts metav1.ListOptions) (watch.Interface, error)
 	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.AthenzDomain, err error)
 	AthenzDomainExpansion
 }
@@ -59,7 +61,7 @@ func newAthenzDomains(c *AthenzV1Client) *athenzDomains {
 }
 
 // Get takes name of the athenzDomain, and returns the corresponding athenzDomain object, and an error if there is any.
-func (c *athenzDomains) Get(name string, options meta_v1.GetOptions) (result *v1.AthenzDomain, err error) {
+func (c *athenzDomains) Get(name string, options metav1.GetOptions) (result *v1.AthenzDomain, err error) {
 	result = &v1.AthenzDomain{}
 	err = c.client.Get().
 		Resource("athenzdomains").
@@ -71,22 +73,32 @@ func (c *athenzDomains) Get(name string, options meta_v1.GetOptions) (result *v1
 }
 
 // List takes label and field selectors, and returns the list of AthenzDomains that match those selectors.
-func (c *athenzDomains) List(opts meta_v1.ListOptions) (result *v1.AthenzDomainList, err error) {
+func (c *athenzDomains) List(opts metav1.ListOptions) (result *v1.AthenzDomainList, err error) {
+	var timeout time.Duration
+	if opts.TimeoutSeconds != nil {
+		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
+	}
 	result = &v1.AthenzDomainList{}
 	err = c.client.Get().
 		Resource("athenzdomains").
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Timeout(timeout).
 		Do().
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested athenzDomains.
-func (c *athenzDomains) Watch(opts meta_v1.ListOptions) (watch.Interface, error) {
+func (c *athenzDomains) Watch(opts metav1.ListOptions) (watch.Interface, error) {
+	var timeout time.Duration
+	if opts.TimeoutSeconds != nil {
+		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
+	}
 	opts.Watch = true
 	return c.client.Get().
 		Resource("athenzdomains").
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Timeout(timeout).
 		Watch()
 }
 
@@ -114,7 +126,7 @@ func (c *athenzDomains) Update(athenzDomain *v1.AthenzDomain) (result *v1.Athenz
 }
 
 // Delete takes name of the athenzDomain and deletes it. Returns an error if one occurs.
-func (c *athenzDomains) Delete(name string, options *meta_v1.DeleteOptions) error {
+func (c *athenzDomains) Delete(name string, options *metav1.DeleteOptions) error {
 	return c.client.Delete().
 		Resource("athenzdomains").
 		Name(name).
@@ -124,10 +136,15 @@ func (c *athenzDomains) Delete(name string, options *meta_v1.DeleteOptions) erro
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *athenzDomains) DeleteCollection(options *meta_v1.DeleteOptions, listOptions meta_v1.ListOptions) error {
+func (c *athenzDomains) DeleteCollection(options *metav1.DeleteOptions, listOptions metav1.ListOptions) error {
+	var timeout time.Duration
+	if listOptions.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	}
 	return c.client.Delete().
 		Resource("athenzdomains").
 		VersionedParams(&listOptions, scheme.ParameterCodec).
+		Timeout(timeout).
 		Body(options).
 		Do().
 		Error()
