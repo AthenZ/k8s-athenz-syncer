@@ -273,7 +273,16 @@ func (c *Controller) sync(domain string) error {
 						continue
 					}
 					if !exists {
-						c.queue.AddRateLimited(string(role.Trust))
+						// Here the logic is to check if current domain is a namespace existing in the cluster, if so, add the trust domain to the queue
+						// otherwise, we should skip processing trust domain as athenz zms only checks one level above for delegated domains.
+						_, nsExists, err := c.nsIndexInformer.GetStore().GetByKey(c.util.DomainToNamespace(domain))
+						if err != nil {
+							log.Errorf("Error checking domain's corresponding namespace in namespace cache store. Error: %v", err)
+							continue
+						}
+						if nsExists || c.util.IsAdminDomain(domain) {
+							c.queue.AddRateLimited(string(role.Trust))
+						}
 					}
 				}
 			}
