@@ -280,7 +280,7 @@ func (c *Controller) sync(domain string) error {
 							log.Errorf("Error checking domain's corresponding namespace in namespace cache store. Error: %v", err)
 							continue
 						}
-						if nsExists {
+						if nsExists || c.util.IsAdminDomain(domain) {
 							c.queue.AddRateLimited(string(role.Trust))
 						}
 					}
