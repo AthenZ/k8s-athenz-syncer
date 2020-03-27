@@ -26,10 +26,13 @@ import (
 )
 
 // AthenzDomainLister helps list AthenzDomains.
+// All objects returned here must be treated as read-only.
 type AthenzDomainLister interface {
 	// List lists all AthenzDomains in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.AthenzDomain, err error)
 	// Get retrieves the AthenzDomain from the index for a given name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1.AthenzDomain, error)
 	AthenzDomainListerExpansion
 }

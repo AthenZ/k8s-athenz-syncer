@@ -56,7 +56,7 @@ func (in *AthenzDomain) DeepCopyObject() runtime.Object {
 func (in *AthenzDomainList) DeepCopyInto(out *AthenzDomainList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	in.ListMeta.DeepCopyInto(&out.ListMeta)
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]AthenzDomain, len(*in))
