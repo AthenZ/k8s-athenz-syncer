@@ -29,6 +29,9 @@ import (
 
 	"github.com/yahoo/k8s-athenz-syncer/pkg/controller"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/util"
+	"github.com/yahoo/k8s-athenz-syncer/pkg/identity"
+	"github.com/yahoo/k8s-athenz-syncer/pkg/clusterconfig"
+	"github.com/yahoo/k8s-athenz-syncer/pkg/crypto"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -92,8 +95,28 @@ func createZMSClient(reloader *r.CertReloader, zmsURL string, disableKeepAlives 
 	return &client, nil
 }
 
+// createZMSClientWithToken - create client to zms to make zms calls using nToken as authentication
+func createZMSClientWithToken(zmsURL string, config identity.Config, header string) (*zms.ZMSClient, error) {
+	// create identityProvider 
+	identityProvider, err := identity.NewIdentityProvider(config)
+	if err != nil {
+		return nil, fmt.Errorf("Could not create NewIdentityProvider: %v", err)
+	}
+	// get nToken
+	token, err := identityProvider.Token()
+	if err != nil {
+		return nil, fmt.Errorf("Could not create ntoken: %v", err)
+	}
+	// zmsClient with nToken
+	client := zms.NewClient(zmsURL, nil)
+	client.AddCredentials(header, token)
+	return &client, nil
+}
+
 // main code path
 func main() {
+	f := flag.NewFlagSet("test", flag.ContinueOnError)
+	ccProvider := clusterconfig.CmdLine(f)
 	// command line arguments for athenz initial setup
 	key := flag.String("key", "/var/run/athenz/service.key.pem", "Athenz private key file")
 	cert := flag.String("cert", "/var/run/athenz/service.cert.pem", "Athenz certificate file")
@@ -106,6 +129,12 @@ func main() {
 	disableKeepAlives := flag.Bool("disable-keep-alives", true, "Disable keep alive for zms client")
 	logLoc := flag.String("log-location", "/var/log/k8s-athenz-syncer/k8s-athenz-syncer.log", "log location")
 	logMode := flag.String("log-mode", "info", "logger mode")
+	identityKeyDir := flag.String("identity-key", "/var/run/keys/identity", "directory containing private keys for service identity")
+	useNToken := flag.Bool("use-ntoken", false, "use nToken for zms authentication")
+	serviceName := flag.String("service-name", "k8s-athenz-syncer", "service name")
+	domainName := flag.String("service-domain", "", "athenz domain that contains k8s-athenz-syncer")
+	secretName := flag.String("secret-name", "", "secret name that contains private key")
+	header := flag.String("auth-header", "", "Authentication header field")
 
 	// create new log
 	log.InitLogger(*logLoc, *logMode)
@@ -117,22 +146,41 @@ func main() {
 	}
 
 	stopCh := make(chan struct{})
-
-	// setup key cert reloader
-	certReloader, err := r.NewCertReloader(r.ReloadConfig{
-		KeyFile:  *key,
-		CertFile: *cert,
-	}, stopCh)
-	if err != nil {
-		log.Panicf("Error occurred when creating new reloader. Error: %v", err)
+	var zmsClient *zms.ZMSClient
+	if *useNToken {
+		// use nToken to authenicate for on-prem ZMS
+		cc, err := ccProvider()
+		if err != nil {
+			log.Panicf("unable to get cluster config, %v", err)
+		}
+		privateKeySource := crypto.NewPrivateKeySource(*identityKeyDir, *secretName)
+		config := &identity.Config{
+			Cluster: cc,
+			Domain: *domainName,
+			Service: *serviceName,
+			PrivateKeyProvider: privateKeySource.SigningKey,
+		}
+		zmsClient, err = createZMSClientWithToken(*zmsURL, *config, *header)
+		if err != nil {
+			log.Panicf("Error occurred when creating zms client. Error: %v", err)
+		}
+		log.Info("Sucessfully created ZMS Client with nToken authn")
+	} else {
+		// setup key cert reloader
+		certReloader, err := r.NewCertReloader(r.ReloadConfig{
+			KeyFile:  *key,
+			CertFile: *cert,
+		}, stopCh)
+		if err != nil {
+			log.Panicf("Error occurred when creating new reloader. Error: %v", err)
+		}
+		// use key and cert to create zmsClient for API calls
+		zmsClient, err = createZMSClient(certReloader, *zmsURL, *disableKeepAlives)
+		if err != nil {
+			log.Panicf("Error occurred when creating zms client. Error: %v", err)
+		}
+		log.Info("Sucessfully created ZMS Client with certs authn")
 	}
-
-	// zmsClient setup for API call
-	zmsClient, err := createZMSClient(certReloader, *zmsURL, *disableKeepAlives)
-	if err != nil {
-		log.Panicf("Error occurred when creating zms client. Error: %v", err)
-	}
-	log.Info("Sucessfully created ZMS Client")
 
 	// process system-namespaces input string and create new Util object
 	systemNSList := strings.Split(*systemNamespaces, ",")
