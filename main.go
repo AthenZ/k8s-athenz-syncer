@@ -27,11 +27,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/yahoo/k8s-athenz-syncer/pkg/controller"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/util"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/identity"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/clusterconfig"
+	"github.com/yahoo/k8s-athenz-syncer/pkg/controller"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/crypto"
+	"github.com/yahoo/k8s-athenz-syncer/pkg/identity"
+	"github.com/yahoo/k8s-athenz-syncer/pkg/util"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -97,7 +97,7 @@ func createZMSClient(reloader *r.CertReloader, zmsURL string, disableKeepAlives 
 
 // createZMSClientWithToken - create client to zms to make zms calls using nToken as authentication
 func createZMSClientWithToken(zmsURL string, config identity.Config, header string) (*zms.ZMSClient, error) {
-	// create identityProvider 
+	// create identityProvider
 	identityProvider, err := identity.NewIdentityProvider(config)
 	if err != nil {
 		return nil, fmt.Errorf("Could not create NewIdentityProvider: %v", err)
@@ -155,9 +155,9 @@ func main() {
 		}
 		privateKeySource := crypto.NewPrivateKeySource(*identityKeyDir, *secretName)
 		config := &identity.Config{
-			Cluster: cc,
-			Domain: *domainName,
-			Service: *serviceName,
+			Cluster:            cc,
+			Domain:             *domainName,
+			Service:            *serviceName,
 			PrivateKeyProvider: privateKeySource.SigningKey,
 		}
 		zmsClient, err = createZMSClientWithToken(*zmsURL, *config, *header)

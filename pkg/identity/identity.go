@@ -15,7 +15,7 @@ limitations under the License.
 */
 package identity
 
-import(
+import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
@@ -26,13 +26,13 @@ import(
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/crypto"
 	"github.com/yahoo/athenz/libs/go/zmssvctoken"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/clusterconfig"
+	"github.com/yahoo/k8s-athenz-syncer/pkg/crypto"
 )
 
 var (
-	gracePeriod = 5 * time.Minute
+	gracePeriod   = 5 * time.Minute
 	defaultExpiry = 24 * time.Hour
 )
 

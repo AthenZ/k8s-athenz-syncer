@@ -15,7 +15,7 @@ limitations under the License.
 */
 package clusterconfig
 
-import(
+import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -23,8 +23,8 @@ import(
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -58,7 +58,6 @@ type ClusterConfiguration struct {
 	TrustRoots                  map[TrustedSource]string `json:"trust-roots"`              // key-value pairs containing file paths to CA trust bundles for TLS entities
 	ClusterLevelDenyUsers       []string                 `json:"cluster-level-deny-users"` // list of users not allowed to access control plane components
 }
-
 
 // CmdLine provides a mechanism to return the cluster configuration for a
 // CLI app.

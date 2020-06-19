@@ -15,7 +15,7 @@ limitations under the License.
 */
 package crypto
 
-import(
+import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/rsa"
@@ -31,7 +31,6 @@ import(
 
 	"github.com/pkg/errors"
 	"github.com/yahoo/k8s-athenz-identity/pkg/util"
-
 )
 
 type base struct {
@@ -47,7 +46,7 @@ type PrivateKeySource struct {
 // SigningKey encapsulates a signing key
 type SigningKey struct {
 	URI     string        // the URI that identifies the key
-	Type    util.KeyType       // key type
+	Type    util.KeyType  // key type
 	Value   crypto.Signer // the private key
 	Version string        // key Version
 }
