@@ -30,7 +30,16 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/yahoo/k8s-athenz-identity/pkg/util"
+)
+
+// KeyType is the type of private key.
+type KeyType int
+
+// supported key types
+const (
+	_ KeyType = iota
+	RSA
+	ECDSA
 )
 
 type base struct {
@@ -46,7 +55,7 @@ type PrivateKeySource struct {
 // SigningKey encapsulates a signing key
 type SigningKey struct {
 	URI     string        // the URI that identifies the key
-	Type    util.KeyType  // key type
+	Type    KeyType       // key type
 	Value   crypto.Signer // the private key
 	Version string        // key Version
 }
@@ -120,7 +129,7 @@ func (pks *PrivateKeySource) SigningKey() (*SigningKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	keyType, key, err := util.PrivateKeyFromPEMBytes(contents)
+	keyType, key, err := PrivateKeyFromPEMBytes(contents)
 	if err != nil {
 		return nil, err
 	}
@@ -130,6 +139,34 @@ func (pks *PrivateKeySource) SigningKey() (*SigningKey, error) {
 		Value:   key,
 		Version: version,
 	}, nil
+}
+
+// PrivateKeyFromPEMBytes returns a private key along with its type from its supplied
+// PEM representation.
+func PrivateKeyFromPEMBytes(privatePEMBytes []byte) (KeyType, crypto.Signer, error) {
+	handle := func(err error) (KeyType, crypto.Signer, error) {
+		return 0, nil, errors.Wrap(err, "PrivateKeyFromPEMBytes")
+	}
+	block, _ := pem.Decode(privatePEMBytes)
+	if block == nil {
+		return handle(fmt.Errorf("unable to load private key, invalid PEM block: %s", privatePEMBytes))
+	}
+	switch block.Type {
+	case "ECDSA PRIVATE KEY":
+		k, err := x509.ParseECPrivateKey(block.Bytes)
+		if err != nil {
+			return handle(err)
+		}
+		return ECDSA, k, nil
+	case "RSA PRIVATE KEY":
+		k, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+		if err != nil {
+			return handle(err)
+		}
+		return RSA, k, nil
+	default:
+		return handle(fmt.Errorf("unsupported private key type: %s", block.Type))
+	}
 }
 
 // latestVersionContents gets the latested version key contents
