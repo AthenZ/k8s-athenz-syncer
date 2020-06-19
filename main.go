@@ -27,7 +27,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/yahoo/k8s-athenz-syncer/pkg/clusterconfig"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/controller"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/crypto"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/identity"
@@ -115,8 +114,6 @@ func createZMSClientWithToken(zmsURL string, config identity.Config, header stri
 
 // main code path
 func main() {
-	f := flag.NewFlagSet("test", flag.ContinueOnError)
-	ccProvider := clusterconfig.CmdLine(f)
 	// command line arguments for athenz initial setup
 	key := flag.String("key", "/var/run/athenz/service.key.pem", "Athenz private key file")
 	cert := flag.String("cert", "/var/run/athenz/service.cert.pem", "Athenz certificate file")
@@ -149,13 +146,11 @@ func main() {
 	var zmsClient *zms.ZMSClient
 	if *useNToken {
 		// use nToken to authenicate for on-prem ZMS
-		cc, err := ccProvider()
 		if err != nil {
 			log.Panicf("unable to get cluster config, %v", err)
 		}
 		privateKeySource := crypto.NewPrivateKeySource(*identityKeyDir, *secretName)
 		config := &identity.Config{
-			Cluster:            cc,
 			Domain:             *domainName,
 			Service:            *serviceName,
 			PrivateKeyProvider: privateKeySource.SigningKey,

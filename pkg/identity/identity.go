@@ -16,24 +16,17 @@ limitations under the License.
 package identity
 
 import (
-	"crypto/tls"
-	"crypto/x509"
-	"encoding/pem"
-	"io/ioutil"
-	"log"
 	"net"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/yahoo/athenz/libs/go/zmssvctoken"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/clusterconfig"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/crypto"
 )
 
 var (
-	gracePeriod   = 5 * time.Minute
-	defaultExpiry = 24 * time.Hour
+	gracePeriod = 5 * time.Minute
 )
 
 // PrivateKeyProvider returns a signing key on demand.
@@ -44,29 +37,12 @@ type tokenProvider interface {
 	Token() (string, error)
 }
 
-type x509Provider interface {
-	X509Cert() (*tls.Config, error)
-}
-
-type X509Provider struct {
-	once         sync.Once
-	stop         chan struct{}
-	l            sync.RWMutex
-	current      *tls.Config
-	certFilePath string
-	keyFilePath  string
-	caCertFile   string
-	expiry       time.Time
-}
-
 // IdentityProvider provides ntokens and optional TLS certs.
 type IdentityProvider struct {
 	tokenProvider
-	x509Provider
 	domain  string
 	service string
 	podIP   net.IP
-	cc      *clusterconfig.ClusterConfiguration
 	ks      PrivateKeyProvider
 }
 
@@ -85,17 +61,16 @@ type tp struct {
 
 // Config is the identity provider configuration.
 type Config struct {
-	Cluster                   *clusterconfig.ClusterConfiguration // cluster config
-	Domain                    string                              // Athenz domain
-	Service                   string                              // Athenz service
-	PodIP                     net.IP                              // Pod IP for IP SAN, nil ok for now
-	PrivateKeyProvider        PrivateKeyProvider                  // source for private keys
-	TokenHost                 string                              // ntoken hostname where available
-	TokenIP                   net.IP                              // ntoken IP address
-	TokenExpiry               time.Duration                       // token expire time
-	X509CertFile              string                              // file path for x509 cert
-	X509KeyFile               string                              // file path for x509 key
-	AthenzClientAuthnx509Mode bool                                // athenz client authentication. default is token.
+	Domain                    string             // Athenz domain
+	Service                   string             // Athenz service
+	PodIP                     net.IP             // Pod IP for IP SAN, nil ok for now
+	PrivateKeyProvider        PrivateKeyProvider // source for private keys
+	TokenHost                 string             // ntoken hostname where available
+	TokenIP                   net.IP             // ntoken IP address
+	TokenExpiry               time.Duration      // token expire time
+	X509CertFile              string             // file path for x509 cert
+	X509KeyFile               string             // file path for x509 key
+	AthenzClientAuthnx509Mode bool               // athenz client authentication. default is token.
 }
 
 // NewIdentityProvider returns an identity provider for the supplied configuration.
@@ -112,79 +87,24 @@ func NewIdentityProvider(config Config) (*IdentityProvider, error) {
 	ip := &IdentityProvider{
 		domain:  config.Domain,
 		service: config.Service,
-		cc:      config.Cluster,
 		ks:      config.PrivateKeyProvider,
 		podIP:   config.PodIP,
 	}
 
-	if config.AthenzClientAuthnx509Mode {
-		if config.X509CertFile != "" && config.X509KeyFile != "" {
-			x509Provider := &X509Provider{
-				certFilePath: config.X509CertFile,
-				keyFilePath:  config.X509KeyFile,
-			}
-			if _, err := x509Provider.X509Cert(); err != nil {
-				return nil, err
-			}
-			ip.x509Provider = x509Provider
-		} else {
-			return nil, errors.New("cert and key both are required when AthenzClientAuthnx509Mode is set to true")
-		}
-	} else {
-		tp := &tp{
-			domain:  config.Domain,
-			service: config.Service,
-			expiry:  config.TokenExpiry,
-			ks:      config.PrivateKeyProvider,
-			host:    config.TokenHost,
-			ip:      ipStr,
-		}
-		if _, err := tp.Token(); err != nil {
-			return nil, errors.Wrap(err, "mint token")
-		}
-		ip.tokenProvider = tp
+	tp := &tp{
+		domain:  config.Domain,
+		service: config.Service,
+		expiry:  config.TokenExpiry,
+		ks:      config.PrivateKeyProvider,
+		host:    config.TokenHost,
+		ip:      ipStr,
 	}
+	if _, err := tp.Token(); err != nil {
+		return nil, errors.Wrap(err, "mint token")
+	}
+	ip.tokenProvider = tp
 
 	return ip, nil
-}
-
-// tlsConfiguration returns tls.config.
-func (x *X509Provider) tlsConfiguration(cacertpem []byte) (*tls.Config, error) {
-	config := &tls.Config{}
-	mycert, err := tls.LoadX509KeyPair(x.certFilePath, x.keyFilePath)
-	if err != nil {
-		return nil, err
-	}
-	config.Certificates = make([]tls.Certificate, 1)
-	config.Certificates[0] = mycert
-
-	if cacertpem != nil {
-		certPool := x509.NewCertPool()
-		certPool.AppendCertsFromPEM(cacertpem)
-		config.RootCAs = certPool
-	}
-	return config, nil
-}
-
-// X509Cert implements x509Provider interface which returns tls.config based on
-// the file path of x509Key and x509Cert
-func (x *X509Provider) X509Cert() (*tls.Config, error) {
-	if x.current == nil {
-		err := x.updateCert()
-		if err != nil {
-			return nil, err
-		}
-		expireDuration := x.expiry.Sub(time.Now())
-		if expireDuration < 0 {
-			return nil, errors.New("certificate is already expired.")
-		}
-		log.Println("certificate expires in " + time.Duration(expireDuration).String())
-		go x.refreshLoop(time.Duration(expireDuration / 3))
-		return x.current, err
-	}
-	x.l.RLock()
-	defer x.l.RUnlock()
-	return x.current, nil
 }
 
 func (tp *tp) updateToken() error {
@@ -223,67 +143,4 @@ func (tp *tp) Token() (string, error) {
 		}
 	}
 	return tp.current, nil
-}
-
-// updateCert reads cert and keys from a file and sets
-// tls.config for x509Provider
-func (x *X509Provider) updateCert() error {
-	var cacertPem []byte
-	var err error
-	if x.caCertFile != "" {
-		cacertPem, err = ioutil.ReadFile(x.caCertFile)
-		if err != nil {
-			return err
-		}
-	}
-	tlsConfig, err := x.tlsConfiguration(cacertPem)
-	if err != nil {
-		return err
-	}
-	pemCertBlock := pem.Block{
-		Bytes: tlsConfig.Certificates[0].Certificate[0],
-	}
-	x.l.Lock()
-	x.expiry = certExpiry(pem.EncodeToMemory(&pemCertBlock))
-	defer x.l.Unlock()
-	x.current = tlsConfig
-	return nil
-}
-
-// refreshLoop executes on a given interval and reloads the cert and keys.
-func (x *X509Provider) refreshLoop(interval time.Duration) {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			if err := x.updateCert(); err != nil {
-				log.Println("update cert error", err)
-			}
-		case <-x.stop:
-			log.Println("stopping channel for x509Provider")
-			return
-		}
-	}
-}
-
-// certExpiry returns the expiration of the supplied cert only if it is
-// less than the default expiry. Otherwise, it returns the default expiry.
-func certExpiry(certPEM []byte) time.Time {
-	def := time.Now().Add(defaultExpiry)
-	block, _ := pem.Decode(certPEM)
-	if block == nil {
-		log.Println("unable to get cert expiry, failed to decode pem block")
-		return def
-	}
-	x509Cert, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		log.Println("unable to get cert expiry, failed to parse cert", err)
-		return def
-	}
-
-	if x509Cert.NotAfter.After(def) {
-		return def
-	}
-	return x509Cert.NotAfter
 }
