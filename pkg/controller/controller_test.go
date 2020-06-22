@@ -37,7 +37,7 @@ import (
 
 const (
 	domainName = "home.domain"
-	username   = "user.hello"
+	username   = "user.name"
 )
 
 func newController() *Controller {
