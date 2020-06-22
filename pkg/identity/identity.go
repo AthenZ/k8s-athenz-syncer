@@ -79,8 +79,8 @@ func NewTokenProvider(config Config, stopCh <-chan struct{}) (*TokenProvider, er
 	return tp, nil
 }
 
-// updateToken - creates new nToken after there was no token or the existing token has expired
-func (tp *TokenProvider) updateToken() error {
+// UpdateToken - creates new nToken after there was no token or the existing token has expired
+func (tp *TokenProvider) UpdateToken() error {
 	key, err := tp.ks()
 	if err != nil {
 		return err
@@ -102,6 +102,7 @@ func (tp *TokenProvider) updateToken() error {
 	tp.expire = time.Now().Add(tp.expiry).Add(-1 * gracePeriod)
 	tp.client.AddCredentials(tp.header, tp.current)
 	log.Info("New nToken generated and added to zmsClient credentials")
+	log.Infof("Current nToken expiration time: %v", tp.expire)
 	return nil
 }
 
@@ -112,7 +113,7 @@ func (tp *TokenProvider) Token() (string, error) {
 	now := time.Now().Add(gracePeriod)
 	if tp.expire.Before(now) {
 		log.Info("Current NToken expired, getting ready to refresh")
-		if err := tp.updateToken(); err != nil {
+		if err := tp.UpdateToken(); err != nil {
 			return "", err
 		}
 	}
@@ -127,7 +128,7 @@ func (tp *TokenProvider) refreshLoop(interval time.Duration, stopCh <-chan struc
 		select {
 		case <-ticker.C:
 			if _, err := tp.Token(); err != nil {
-				log.Println("update token error", err)
+				log.Errorf("update token error: %v", err)
 			}
 		case <-stopCh:
 			log.Println("stopping channel for token provider")
