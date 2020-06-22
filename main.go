@@ -148,7 +148,7 @@ func main() {
 			TokenExpiry:        nTokenPeriod,
 		}, stopCh)
 		if err != nil {
-			log.Panicf("Could not create : %v", err)
+			log.Panicf("Could not create new Token Provider: %v", err)
 		}
 		log.Info("Sucessfully created ZMS Client with nToken authn")
 	} else {
