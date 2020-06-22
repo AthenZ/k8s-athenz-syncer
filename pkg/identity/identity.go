@@ -79,6 +79,7 @@ func NewTokenProvider(config Config, stopCh <-chan struct{}) (*TokenProvider, er
 	return tp, nil
 }
 
+// updateToken - creates new nToken after there was no token or the existing token has expired
 func (tp *TokenProvider) updateToken() error {
 	key, err := tp.ks()
 	if err != nil {
@@ -118,7 +119,7 @@ func (tp *TokenProvider) Token() (string, error) {
 	return tp.current, nil
 }
 
-// refreshLoop for token
+// refreshLoop go subroutine that checks if the current token is expired and updates the n token
 func (tp *TokenProvider) refreshLoop(interval time.Duration, stopCh <-chan struct{}) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
