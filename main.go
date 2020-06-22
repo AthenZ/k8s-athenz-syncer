@@ -94,24 +94,6 @@ func createZMSClient(reloader *r.CertReloader, zmsURL string, disableKeepAlives 
 	return &client, nil
 }
 
-// createZMSClientWithToken - create client to zms to make zms calls using nToken as authentication
-func createZMSClientWithToken(zmsURL string, config identity.Config, header string) (*zms.ZMSClient, error) {
-	// create identityProvider
-	identityProvider, err := identity.NewIdentityProvider(config)
-	if err != nil {
-		return nil, fmt.Errorf("Could not create NewIdentityProvider: %v", err)
-	}
-	// get nToken
-	token, err := identityProvider.Token()
-	if err != nil {
-		return nil, fmt.Errorf("Could not create ntoken: %v", err)
-	}
-	// zmsClient with nToken
-	client := zms.NewClient(zmsURL, nil)
-	client.AddCredentials(header, token)
-	return &client, nil
-}
-
 // main code path
 func main() {
 	// command line arguments for athenz initial setup
@@ -130,8 +112,9 @@ func main() {
 	useNToken := flag.Bool("use-ntoken", false, "use nToken for zms authentication")
 	serviceName := flag.String("service-name", "k8s-athenz-syncer", "service name")
 	domainName := flag.String("service-domain", "", "athenz domain that contains k8s-athenz-syncer")
-	secretName := flag.String("secret-name", "", "secret name that contains private key")
+	secretName := flag.String("secret-name", "k8s-athenz-syncer", "secret name that contains private key")
 	header := flag.String("auth-header", "", "Authentication header field")
+	nTokenExpireTime := flag.String("ntoken-expiry", "1h0m0s", "Custom nToken expiration duration")
 
 	// create new log
 	log.InitLogger(*logLoc, *logMode)
@@ -143,21 +126,29 @@ func main() {
 	}
 
 	stopCh := make(chan struct{})
+
+	nTokenPeriod, err := time.ParseDuration(*nTokenExpireTime)
+	if err != nil {
+		log.Panicf("NToken expiry duration input is invalid. Error: %v", err)
+	}
+
 	var zmsClient *zms.ZMSClient
 	if *useNToken {
+		client := zms.NewClient(*zmsURL, nil)
+		zmsClient = &client
 		// use nToken to authenicate for on-prem ZMS
-		if err != nil {
-			log.Panicf("unable to get cluster config, %v", err)
-		}
 		privateKeySource := crypto.NewPrivateKeySource(*identityKeyDir, *secretName)
-		config := &identity.Config{
+		// create tokenProvider
+		_, err := identity.NewTokenProvider(identity.Config{
+			Client:             zmsClient,
+			Header:             *header,
 			Domain:             *domainName,
 			Service:            *serviceName,
 			PrivateKeyProvider: privateKeySource.SigningKey,
-		}
-		zmsClient, err = createZMSClientWithToken(*zmsURL, *config, *header)
+			TokenExpiry:        nTokenPeriod,
+		}, stopCh)
 		if err != nil {
-			log.Panicf("Error occurred when creating zms client. Error: %v", err)
+			log.Panicf("Could not create : %v", err)
 		}
 		log.Info("Sucessfully created ZMS Client with nToken authn")
 	} else {

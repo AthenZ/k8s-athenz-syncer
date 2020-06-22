@@ -1,12 +1,9 @@
 /*
 Copyright 2019, Oath Inc.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
     http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,13 +13,14 @@ limitations under the License.
 package identity
 
 import (
-	"net"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/yahoo/athenz/clients/go/zms"
 	"github.com/yahoo/athenz/libs/go/zmssvctoken"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/crypto"
+	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
 )
 
 var (
@@ -37,77 +35,51 @@ type tokenProvider interface {
 	Token() (string, error)
 }
 
-// IdentityProvider provides ntokens and optional TLS certs.
-type IdentityProvider struct {
-	tokenProvider
+// TokenProvider implements tokenProvider provides nTokens
+type TokenProvider struct {
+	client  *zms.ZMSClient
+	header  string
 	domain  string
 	service string
-	podIP   net.IP
-	ks      PrivateKeyProvider
-}
-
-// tp implements tokenProvider
-type tp struct {
-	domain  string
-	service string
-	ip      string
-	host    string
 	expiry  time.Duration
 	ks      PrivateKeyProvider
-	l       sync.Mutex
+	l       sync.RWMutex
 	current string
 	expire  time.Time
 }
 
-// Config is the identity provider configuration.
+// Config is the token provider configuration.
 type Config struct {
-	Domain                    string             // Athenz domain
-	Service                   string             // Athenz service
-	PodIP                     net.IP             // Pod IP for IP SAN, nil ok for now
-	PrivateKeyProvider        PrivateKeyProvider // source for private keys
-	TokenHost                 string             // ntoken hostname where available
-	TokenIP                   net.IP             // ntoken IP address
-	TokenExpiry               time.Duration      // token expire time
-	X509CertFile              string             // file path for x509 cert
-	X509KeyFile               string             // file path for x509 key
-	AthenzClientAuthnx509Mode bool               // athenz client authentication. default is token.
+	Client             *zms.ZMSClient
+	Header             string
+	Domain             string             // Athenz domain
+	Service            string             // Athenz service
+	PrivateKeyProvider PrivateKeyProvider // source for private keys
+	TokenExpiry        time.Duration      // token expire time
 }
 
-// NewIdentityProvider returns an identity provider for the supplied configuration.
-// It returns either x509Provider or TokenProvider based on the presence of x509 configurations.
-func NewIdentityProvider(config Config) (*IdentityProvider, error) {
+// NewTokenProvider returns a token for the supplied configuration.
+func NewTokenProvider(config Config, stopCh <-chan struct{}) (*TokenProvider, error) {
 	if config.TokenExpiry == 0 {
 		config.TokenExpiry = time.Hour
 	}
-	var ipStr string
-	if config.TokenIP != nil {
-		ipStr = config.TokenIP.String()
-	}
 
-	ip := &IdentityProvider{
-		domain:  config.Domain,
-		service: config.Service,
-		ks:      config.PrivateKeyProvider,
-		podIP:   config.PodIP,
-	}
-
-	tp := &tp{
+	tp := &TokenProvider{
+		client:  config.Client,
+		header:  config.Header,
 		domain:  config.Domain,
 		service: config.Service,
 		expiry:  config.TokenExpiry,
 		ks:      config.PrivateKeyProvider,
-		host:    config.TokenHost,
-		ip:      ipStr,
 	}
 	if _, err := tp.Token(); err != nil {
 		return nil, errors.Wrap(err, "mint token")
 	}
-	ip.tokenProvider = tp
-
-	return ip, nil
+	go tp.refreshLoop(time.Duration(config.TokenExpiry/3), stopCh)
+	return tp, nil
 }
 
-func (tp *tp) updateToken() error {
+func (tp *TokenProvider) updateToken() error {
 	key, err := tp.ks()
 	if err != nil {
 		return err
@@ -120,8 +92,6 @@ func (tp *tp) updateToken() error {
 	if err != nil {
 		return err
 	}
-	b.SetIPAddress(tp.ip)
-	b.SetHostname(tp.host)
 	b.SetExpiration(tp.expiry)
 	tok, err := b.Token().Value()
 	if err != nil {
@@ -129,18 +99,38 @@ func (tp *tp) updateToken() error {
 	}
 	tp.current = tok
 	tp.expire = time.Now().Add(tp.expiry).Add(-1 * gracePeriod)
+	tp.client.AddCredentials(tp.header, tp.current)
+	log.Info("New nToken generated and added to zmsClient credentials")
 	return nil
 }
 
 // Token implements the tokenProvider interface
-func (tp *tp) Token() (string, error) {
+func (tp *TokenProvider) Token() (string, error) {
 	tp.l.Lock()
 	defer tp.l.Unlock()
-	now := time.Now().Add(-1 * gracePeriod)
+	now := time.Now().Add(gracePeriod)
 	if tp.expire.Before(now) {
+		log.Info("Current NToken expired, getting ready to refresh")
 		if err := tp.updateToken(); err != nil {
 			return "", err
 		}
 	}
 	return tp.current, nil
+}
+
+// refreshLoop for token
+func (tp *TokenProvider) refreshLoop(interval time.Duration, stopCh <-chan struct{}) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			if _, err := tp.Token(); err != nil {
+				log.Println("update token error", err)
+			}
+		case <-stopCh:
+			log.Println("stopping channel for token provider")
+			return
+		}
+	}
 }
