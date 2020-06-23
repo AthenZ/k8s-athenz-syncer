@@ -136,7 +136,6 @@ func main() {
 	if *useNToken {
 		client := zms.NewClient(*zmsURL, nil)
 		zmsClient = &client
-		// use nToken to authenicate for on-prem ZMS
 		privateKeySource := crypto.NewPrivateKeySource(*identityKeyDir, *secretName)
 		// create tokenProvider
 		_, err := identity.NewTokenProvider(identity.Config{

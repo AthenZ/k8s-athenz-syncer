@@ -33,12 +33,7 @@ type tokenProvider interface {
 
 // TokenProvider implements tokenProvider provides nTokens
 type TokenProvider struct {
-	client  *zms.ZMSClient
-	header  string
-	domain  string
-	service string
-	expiry  time.Duration
-	ks      PrivateKeyProvider
+	config  Config
 	l       sync.RWMutex
 	current string
 	expire  time.Time
@@ -61,12 +56,7 @@ func NewTokenProvider(config Config, stopCh <-chan struct{}) (*TokenProvider, er
 	}
 
 	tp := &TokenProvider{
-		client:  config.Client,
-		header:  config.Header,
-		domain:  config.Domain,
-		service: config.Service,
-		expiry:  config.TokenExpiry,
-		ks:      config.PrivateKeyProvider,
+		config: config,
 	}
 	if _, err := tp.Token(); err != nil {
 		return nil, errors.Wrap(err, "mint token")
@@ -77,7 +67,7 @@ func NewTokenProvider(config Config, stopCh <-chan struct{}) (*TokenProvider, er
 
 // UpdateToken - creates new nToken after there was no token or the existing token has expired
 func (tp *TokenProvider) UpdateToken() error {
-	key, err := tp.ks()
+	key, err := tp.config.PrivateKeyProvider()
 	if err != nil {
 		return err
 	}
@@ -85,18 +75,18 @@ func (tp *TokenProvider) UpdateToken() error {
 	if err != nil {
 		return err
 	}
-	b, err := zmssvctoken.NewTokenBuilder(tp.domain, tp.service, pem, key.Version)
+	b, err := zmssvctoken.NewTokenBuilder(tp.config.Domain, tp.config.Service, pem, key.Version)
 	if err != nil {
 		return err
 	}
-	b.SetExpiration(tp.expiry)
+	b.SetExpiration(tp.config.TokenExpiry)
 	tok, err := b.Token().Value()
 	if err != nil {
 		return err
 	}
 	tp.current = tok
-	tp.expire = time.Now().Add(tp.expiry)
-	tp.client.AddCredentials(tp.header, tp.current)
+	tp.expire = time.Now().Add(tp.config.TokenExpiry)
+	tp.config.Client.AddCredentials(tp.config.Header, tp.current)
 	log.Info("New nToken generated and added to zmsClient credentials")
 	log.Infof("Current nToken expiration time: %v", tp.expire)
 	return nil
@@ -106,7 +96,7 @@ func (tp *TokenProvider) UpdateToken() error {
 func (tp *TokenProvider) Token() (string, error) {
 	tp.l.Lock()
 	defer tp.l.Unlock()
-	gracePeriod := tp.expiry.Seconds() * 0.25
+	gracePeriod := tp.config.TokenExpiry.Seconds() * 0.25
 	now := time.Now().Add(time.Second * time.Duration(gracePeriod))
 	if tp.expire.Before(now) {
 		log.Info("Current NToken expired, getting ready to refresh")

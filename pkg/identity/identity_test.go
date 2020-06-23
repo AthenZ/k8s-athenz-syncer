@@ -34,9 +34,9 @@ import (
 const (
 	domainName     = "home.domain"
 	serviceName    = "test.service"
-	identityKeyDir = "./keys/"
+	identityKeyDir = "./"
 	secretName     = "secret-key"
-	keyFile        = "./keys/secret-key.v0"
+	keyFile        = "secret-key.v0"
 )
 
 func savePEMKey(fileName string, key *rsa.PrivateKey) {
@@ -96,6 +96,10 @@ func createTokenProvider() *TokenProvider {
 func TestToken(t *testing.T) {
 	log.InitLogger("/tmp/log/test.log", "info")
 	tp := createTokenProvider()
+
+	createKeyFile()
+	defer os.Remove(keyFile)
+
 	token1, err := tp.Token()
 	if err != nil {
 		t.Errorf("Unable to get token. Error: %v", err)
@@ -112,7 +116,7 @@ func TestToken(t *testing.T) {
 	if token1 != token2 || token1Expire != token2Expire {
 		t.Error("Token updated when not expired")
 	}
-	if *tp.client.CredsToken != token2 {
+	if *tp.config.Client.CredsToken != token2 {
 		t.Error("Failed to update client token")
 	}
 }
@@ -134,7 +138,7 @@ func TestUpdateToken(t *testing.T) {
 	if token1Expire.Before(time.Now().Add(50*time.Minute)) || token1Expire.After(time.Now().Add(time.Hour)) {
 		t.Error("Token 1 wrong expiration time")
 	}
-	if *tp.client.CredsToken != token1 {
+	if *tp.config.Client.CredsToken != token1 {
 		t.Error("Failed to update client token to token1")
 	}
 	err = tp.UpdateToken()
@@ -149,7 +153,7 @@ func TestUpdateToken(t *testing.T) {
 	if token1 == token2 || token1Expire == token2Expire {
 		t.Error("Token failed to updated")
 	}
-	if *tp.client.CredsToken != token2 {
+	if *tp.config.Client.CredsToken != token2 {
 		t.Error("Failed to update client token to token2")
 	}
 }
