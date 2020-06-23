@@ -16,7 +16,13 @@ limitations under the License.
 package identity
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
+	"io/ioutil"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -30,11 +36,46 @@ const (
 	serviceName    = "test.service"
 	identityKeyDir = "./keys/"
 	secretName     = "secret-key"
+	keyFile        = "./keys/secret-key.v0"
 )
+
+func savePEMKey(fileName string, key *rsa.PrivateKey) {
+	keyOut, err := os.Create(fileName)
+	if err != nil {
+		log.Fatalf("failed to open %s for writing: %s", fileName, err)
+	}
+	defer keyOut.Close()
+
+	var privateKey = &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(key),
+	}
+
+	if err := pem.Encode(keyOut, privateKey); err != nil {
+		log.Fatalf("failed to write data to %s: %s", fileName, err)
+	}
+}
+
+func createKeyFile() []byte {
+	priv, err := rsa.GenerateKey(rand.Reader, 1024)
+	if err != nil {
+		log.Fatalf("Failed to generate private key. Error: %s", err)
+	}
+	savePEMKey(keyFile, priv)
+	keybytes, err := ioutil.ReadFile(keyFile)
+	if err != nil {
+		log.Fatalf("Failed to read generated private key: %s", err)
+	}
+	return keybytes
+}
 
 // createTokenProvider - tokenProvider for testing
 func createTokenProvider() *TokenProvider {
 	log.InitLogger("/tmp/log/test.log", "info")
+
+	createKeyFile()
+	defer os.Remove(keyFile)
+
 	stop := make(chan struct{})
 	privateKeySource := crypto.NewPrivateKeySource(identityKeyDir, secretName)
 	zmsClient := zms.NewClient("https://zms.athenz.com", &http.Transport{})
@@ -80,6 +121,10 @@ func TestToken(t *testing.T) {
 func TestUpdateToken(t *testing.T) {
 	log.InitLogger("/tmp/log/test.log", "info")
 	tp := createTokenProvider()
+
+	createKeyFile()
+	defer os.Remove(keyFile)
+
 	err := tp.UpdateToken()
 	if err != nil {
 		t.Errorf("Unable to get token. Error: %v", err)

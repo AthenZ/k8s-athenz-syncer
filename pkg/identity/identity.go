@@ -23,10 +23,6 @@ import (
 	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
 )
 
-var (
-	gracePeriod = 5 * time.Minute
-)
-
 // PrivateKeyProvider returns a signing key on demand.
 type PrivateKeyProvider func() (*crypto.SigningKey, error)
 
@@ -75,7 +71,7 @@ func NewTokenProvider(config Config, stopCh <-chan struct{}) (*TokenProvider, er
 	if _, err := tp.Token(); err != nil {
 		return nil, errors.Wrap(err, "mint token")
 	}
-	go tp.refreshLoop(time.Duration(config.TokenExpiry/3), stopCh)
+	go tp.refreshLoop(time.Duration(config.TokenExpiry/10), stopCh)
 	return tp, nil
 }
 
@@ -99,7 +95,7 @@ func (tp *TokenProvider) UpdateToken() error {
 		return err
 	}
 	tp.current = tok
-	tp.expire = time.Now().Add(tp.expiry).Add(-1 * gracePeriod)
+	tp.expire = time.Now().Add(tp.expiry)
 	tp.client.AddCredentials(tp.header, tp.current)
 	log.Info("New nToken generated and added to zmsClient credentials")
 	log.Infof("Current nToken expiration time: %v", tp.expire)
@@ -110,7 +106,8 @@ func (tp *TokenProvider) UpdateToken() error {
 func (tp *TokenProvider) Token() (string, error) {
 	tp.l.Lock()
 	defer tp.l.Unlock()
-	now := time.Now().Add(gracePeriod)
+	gracePeriod := tp.expiry.Seconds() * 0.25
+	now := time.Now().Add(time.Second * time.Duration(gracePeriod))
 	if tp.expire.Before(now) {
 		log.Info("Current NToken expired, getting ready to refresh")
 		if err := tp.UpdateToken(); err != nil {
