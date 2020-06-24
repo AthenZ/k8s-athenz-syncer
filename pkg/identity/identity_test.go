@@ -16,11 +16,6 @@ limitations under the License.
 package identity
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
-	"encoding/pem"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
@@ -29,52 +24,23 @@ import (
 	"github.com/yahoo/athenz/clients/go/zms"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/crypto"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
+	"github.com/yahoo/k8s-athenz-syncer/pkg/test"
 )
 
 const (
 	domainName     = "home.domain"
 	serviceName    = "test.service"
-	identityKeyDir = "./"
+	identityKeyDir = "./tmp/"
 	secretName     = "secret-key"
 	keyFile        = "secret-key.v0"
 )
-
-func savePEMKey(fileName string, key *rsa.PrivateKey) {
-	keyOut, err := os.Create(fileName)
-	if err != nil {
-		log.Fatalf("failed to open %s for writing: %s", fileName, err)
-	}
-	defer keyOut.Close()
-
-	var privateKey = &pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(key),
-	}
-
-	if err := pem.Encode(keyOut, privateKey); err != nil {
-		log.Fatalf("failed to write data to %s: %s", fileName, err)
-	}
-}
-
-func createKeyFile() []byte {
-	priv, err := rsa.GenerateKey(rand.Reader, 1024)
-	if err != nil {
-		log.Fatalf("Failed to generate private key. Error: %s", err)
-	}
-	savePEMKey(keyFile, priv)
-	keybytes, err := ioutil.ReadFile(keyFile)
-	if err != nil {
-		log.Fatalf("Failed to read generated private key: %s", err)
-	}
-	return keybytes
-}
 
 // createTokenProvider - tokenProvider for testing
 func createTokenProvider() *TokenProvider {
 	log.InitLogger("/tmp/log/test.log", "info")
 
-	createKeyFile()
-	defer os.Remove(keyFile)
+	test.CreateKeyFile(identityKeyDir)
+	defer os.RemoveAll(identityKeyDir)
 
 	stop := make(chan struct{})
 	privateKeySource := crypto.NewPrivateKeySource(identityKeyDir, secretName)
@@ -94,11 +60,10 @@ func createTokenProvider() *TokenProvider {
 
 // TestToken: token should not update if token is not expired
 func TestToken(t *testing.T) {
-	log.InitLogger("/tmp/log/test.log", "info")
 	tp := createTokenProvider()
 
-	createKeyFile()
-	defer os.Remove(keyFile)
+	test.CreateKeyFile(identityKeyDir)
+	defer os.RemoveAll(identityKeyDir)
 
 	token1, err := tp.Token()
 	if err != nil {
@@ -123,11 +88,10 @@ func TestToken(t *testing.T) {
 
 // TestUpdateToken: token should update everytime UpdateToken() is called
 func TestUpdateToken(t *testing.T) {
-	log.InitLogger("/tmp/log/test.log", "info")
 	tp := createTokenProvider()
 
-	createKeyFile()
-	defer os.Remove(keyFile)
+	test.CreateKeyFile(identityKeyDir)
+	defer os.RemoveAll(identityKeyDir)
 
 	err := tp.UpdateToken()
 	if err != nil {

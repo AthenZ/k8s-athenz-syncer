@@ -26,11 +26,6 @@ import (
 // PrivateKeyProvider returns a signing key on demand.
 type PrivateKeyProvider func() (*crypto.SigningKey, error)
 
-// tokenProvider provides tokens.
-type tokenProvider interface {
-	Token() (string, error)
-}
-
 // TokenProvider implements tokenProvider provides nTokens
 type TokenProvider struct {
 	config  Config
