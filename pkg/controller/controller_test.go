@@ -50,6 +50,8 @@ func newController() *Controller {
 }
 
 func getFakeDomain() zms.SignedDomain {
+	t := true
+	f := false
 	allow := zms.ALLOW
 	timestamp, err := rdl.TimestampParse("2019-06-21T19:28:09.305Z")
 	if err != nil {
@@ -58,8 +60,10 @@ func getFakeDomain() zms.SignedDomain {
 
 	return zms.SignedDomain{
 		Domain: &zms.DomainData{
-			Modified: timestamp,
-			Name:     zms.DomainName(domainName),
+			Enabled:      &t,
+			AuditEnabled: &f,
+			Modified:     timestamp,
+			Name:         zms.DomainName(domainName),
 			Policies: &zms.SignedPolicies{
 				Contents: &zms.DomainPolicies{
 					Domain: zms.DomainName(domainName),
@@ -89,6 +93,8 @@ func getFakeDomain() zms.SignedDomain {
 					RoleMembers: []*zms.RoleMember{
 						{
 							MemberName: zms.MemberName(username),
+							Active:     &f,
+							Approved:   &f,
 						},
 					},
 				},

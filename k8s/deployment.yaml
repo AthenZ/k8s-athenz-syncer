@@ -97,6 +97,8 @@ spec:
         - name: tls-certs
           mountPath: /var/run/athenz
           readOnly: true
+        - name: identity-key
+          mountPath: /var/run/keys/identity
       - args:
         - --mode=refresh
         - --endpoint=unix:///identity/connect/agent.sock
@@ -166,3 +168,7 @@ spec:
         flexVolume:
           driver: athenz.kubernetes.io/athenz-volume-driver
           readOnly: true
+      - name: identity-key
+        secret: 
+          secretName: k8s-athenz-syncer
+          defaultMode: 256

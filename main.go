@@ -28,6 +28,8 @@ import (
 	"time"
 
 	"github.com/yahoo/k8s-athenz-syncer/pkg/controller"
+	"github.com/yahoo/k8s-athenz-syncer/pkg/crypto"
+	"github.com/yahoo/k8s-athenz-syncer/pkg/identity"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/util"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -106,6 +108,13 @@ func main() {
 	disableKeepAlives := flag.Bool("disable-keep-alives", true, "Disable keep alive for zms client")
 	logLoc := flag.String("log-location", "/var/log/k8s-athenz-syncer/k8s-athenz-syncer.log", "log location")
 	logMode := flag.String("log-mode", "info", "logger mode")
+	identityKeyDir := flag.String("identity-key", "/var/run/keys/identity", "directory containing private keys for service identity")
+	useNToken := flag.Bool("use-ntoken", false, "use nToken for zms authentication")
+	serviceName := flag.String("service-name", "k8s-athenz-syncer", "service name")
+	domainName := flag.String("service-domain", "", "athenz domain that contains k8s-athenz-syncer")
+	secretName := flag.String("secret-name", "k8s-athenz-syncer", "secret name that contains private key")
+	header := flag.String("auth-header", "", "Authentication header field")
+	nTokenExpireTime := flag.String("ntoken-expiry", "1h0m0s", "Custom nToken expiration duration")
 
 	// create new log
 	log.InitLogger(*logLoc, *logMode)
@@ -117,22 +126,47 @@ func main() {
 	}
 
 	stopCh := make(chan struct{})
+	var zmsClient *zms.ZMSClient
+	if *useNToken {
+		client := zms.NewClient(*zmsURL, nil)
+		zmsClient = &client
 
-	// setup key cert reloader
-	certReloader, err := r.NewCertReloader(r.ReloadConfig{
-		KeyFile:  *key,
-		CertFile: *cert,
-	}, stopCh)
-	if err != nil {
-		log.Panicf("Error occurred when creating new reloader. Error: %v", err)
-	}
+		// custom nToken expiration duration
+		nTokenPeriod, err := time.ParseDuration(*nTokenExpireTime)
+		if err != nil {
+			log.Panicf("NToken expiry duration input is invalid. Error: %v", err)
+		}
 
-	// zmsClient setup for API call
-	zmsClient, err := createZMSClient(certReloader, *zmsURL, *disableKeepAlives)
-	if err != nil {
-		log.Panicf("Error occurred when creating zms client. Error: %v", err)
+		privateKeySource := crypto.NewPrivateKeySource(*identityKeyDir, *secretName)
+		// create tokenProvider
+		_, err = identity.NewTokenProvider(identity.Config{
+			Client:             zmsClient,
+			Header:             *header,
+			Domain:             *domainName,
+			Service:            *serviceName,
+			PrivateKeyProvider: privateKeySource.SigningKey,
+			TokenExpiry:        nTokenPeriod,
+		}, stopCh)
+		if err != nil {
+			log.Panicf("Could not create new Token Provider: %v", err)
+		}
+		log.Info("Sucessfully created ZMS Client with nToken authn")
+	} else {
+		// setup key cert reloader
+		certReloader, err := r.NewCertReloader(r.ReloadConfig{
+			KeyFile:  *key,
+			CertFile: *cert,
+		}, stopCh)
+		if err != nil {
+			log.Panicf("Error occurred when creating new reloader. Error: %v", err)
+		}
+		// use key and cert to create zmsClient for API calls
+		zmsClient, err = createZMSClient(certReloader, *zmsURL, *disableKeepAlives)
+		if err != nil {
+			log.Panicf("Error occurred when creating zms client. Error: %v", err)
+		}
+		log.Info("Sucessfully created ZMS Client with certs authn")
 	}
-	log.Info("Sucessfully created ZMS Client")
 
 	// process system-namespaces input string and create new Util object
 	systemNSList := strings.Split(*systemNamespaces, ",")
