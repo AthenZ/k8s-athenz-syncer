@@ -23,6 +23,11 @@ import (
 	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
 )
 
+const (
+	refreshIntervalFactor      = 10
+	expirationCheckGracePeriod = 0.25
+)
+
 // PrivateKeyProvider returns a signing key on demand.
 type PrivateKeyProvider func() (*crypto.SigningKey, error)
 
@@ -56,7 +61,7 @@ func NewTokenProvider(config Config, stopCh <-chan struct{}) (*TokenProvider, er
 	if _, err := tp.Token(); err != nil {
 		return nil, errors.Wrap(err, "mint token")
 	}
-	go tp.refreshLoop(time.Duration(config.TokenExpiry/10), stopCh)
+	go tp.refreshLoop(time.Duration(config.TokenExpiry/refreshIntervalFactor), stopCh)
 	return tp, nil
 }
 
@@ -91,7 +96,7 @@ func (tp *TokenProvider) UpdateToken() error {
 func (tp *TokenProvider) Token() (string, error) {
 	tp.l.Lock()
 	defer tp.l.Unlock()
-	gracePeriod := tp.config.TokenExpiry.Seconds() * 0.25
+	gracePeriod := tp.config.TokenExpiry.Seconds() * expirationCheckGracePeriod
 	now := time.Now().Add(time.Second * time.Duration(gracePeriod))
 	if tp.expire.Before(now) {
 		log.Info("Current NToken expired, getting ready to refresh")

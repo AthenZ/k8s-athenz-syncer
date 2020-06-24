@@ -126,19 +126,20 @@ func main() {
 	}
 
 	stopCh := make(chan struct{})
-
-	nTokenPeriod, err := time.ParseDuration(*nTokenExpireTime)
-	if err != nil {
-		log.Panicf("NToken expiry duration input is invalid. Error: %v", err)
-	}
-
 	var zmsClient *zms.ZMSClient
 	if *useNToken {
 		client := zms.NewClient(*zmsURL, nil)
 		zmsClient = &client
+
+		// custom nToken expiration duration
+		nTokenPeriod, err := time.ParseDuration(*nTokenExpireTime)
+		if err != nil {
+			log.Panicf("NToken expiry duration input is invalid. Error: %v", err)
+		}
+
 		privateKeySource := crypto.NewPrivateKeySource(*identityKeyDir, *secretName)
 		// create tokenProvider
-		_, err := identity.NewTokenProvider(identity.Config{
+		_, err = identity.NewTokenProvider(identity.Config{
 			Client:             zmsClient,
 			Header:             *header,
 			Domain:             *domainName,
