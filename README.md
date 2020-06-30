@@ -5,7 +5,7 @@ into corresponding Kubernetes [AthenzDomain](https://github.com/yahoo/k8s-athenz
 
 ### Architecture
 <p align="center">
-  <img src=images/K8s-Athenz-Sync-Controller.png>
+  <img src=images/K8s-Athenz-Syncer-Controller.png>
 </p>
 
 ## Table of Contents
