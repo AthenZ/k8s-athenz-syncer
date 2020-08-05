@@ -8,14 +8,11 @@ import (
 )
 
 func MainEntry(t *testing.M) {
-	stopCh := make(chan struct{})
-
-	if err := setup(stopCh); err != nil {
+	if err := setup(); err != nil {
 		logrus.Errorf("fail to setup framework: %v", err)
 		os.Exit(1)
 	}
 
-	defer close(stopCh)
 	code := t.Run()
 
 	if err := teardown(); err != nil {

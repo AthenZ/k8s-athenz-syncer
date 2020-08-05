@@ -1,13 +1,15 @@
 package framework
 
 import (
+	"crypto/tls"
 	"flag"
+	"fmt"
+	"net/http"
 	"path/filepath"
 
 	"github.com/yahoo/athenz/clients/go/zms"
 	athenzClientset "github.com/yahoo/k8s-athenz-syncer/pkg/client/clientset/versioned"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
-	r "github.com/yahoo/k8s-athenz-syncer/pkg/reloader"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/util"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -22,7 +24,7 @@ type Framework struct {
 var Global *Framework
 
 // Setup() create necessary clients for tests
-func setup(stopCh <-chan struct{}) error {
+func setup() error {
 	// config
 	var kubeconfig *string
 	if home := util.HomeDir(); home != "" {
@@ -33,7 +35,6 @@ func setup(stopCh <-chan struct{}) error {
 	inClusterConfig := flag.Bool("inClusterConfig", true, "Set to true to use in cluster config.")
 	key := flag.String("key", "/var/run/athenz/service.key.pem", "Athenz private key file")
 	cert := flag.String("cert", "/var/run/athenz/service.cert.pem", "Athenz certificate file")
-	disableKeepAlives := flag.Bool("disable-keep-alives", true, "Disable keep alive for zms client")
 	zmsURL := flag.String("zms-url", "", "Athenz ZMS API URL")
 	logLoc := flag.String("log-location", "/var/log/k8s-athenz-syncer/k8s-athenz-syncer.log", "log location")
 	logMode := flag.String("log-mode", "info", "logger mode")
@@ -66,7 +67,7 @@ func setup(stopCh <-chan struct{}) error {
 	}
 
 	// set up zms client
-	zmsclient, err := setupZMSClient(*key, *cert, *disableKeepAlives, *zmsURL, stopCh)
+	zmsclient, err := setupZMSClient(*key, *cert, *zmsURL)
 	if err != nil {
 		log.Error("Failed to create zms client")
 		return err
@@ -80,21 +81,19 @@ func setup(stopCh <-chan struct{}) error {
 	return nil
 }
 
-func setupZMSClient(key string, cert string, disableKeepAlives bool, zmsURL string, stopCh <-chan struct{}) (*zms.ZMSClient, error) {
-	reloader, err := r.NewCertReloader(r.ReloadConfig{
-		KeyFile:  key,
-		CertFile: cert,
-	}, stopCh)
+func setupZMSClient(key string, cert string, zmsURL string) (*zms.ZMSClient, error) {
+	clientCert, err := tls.LoadX509KeyPair(cert, key)
 	if err != nil {
-		log.Panicf("Error occurred when creating new reloader. Error: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("Unable to formulate clientCert from key and cert bytes, error: %v", err)
 	}
-	client, err := util.CreateZMSClient(reloader, zmsURL, disableKeepAlives)
-	if err != nil {
-		log.Panicf("Error occurred when creating zms client. Error: %v", err)
-		return nil, err
+	config := &tls.Config{}
+	config.Certificates = make([]tls.Certificate, 1)
+	config.Certificates[0] = clientCert
+	transport := &http.Transport{
+		TLSClientConfig: config,
 	}
-	return client, nil
+	client := zms.NewClient(zmsURL, transport)
+	return &client, nil
 }
 
 func teardown() error {

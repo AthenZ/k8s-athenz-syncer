@@ -16,8 +16,10 @@ limitations under the License.
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -28,6 +30,7 @@ import (
 	"github.com/yahoo/k8s-athenz-syncer/pkg/controller"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/crypto"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/identity"
+	"github.com/yahoo/k8s-athenz-syncer/pkg/reloader"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/util"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -69,6 +72,20 @@ func getClients(inClusterConfig *bool) (kubernetes.Interface, *athenzClientset.C
 
 	log.Info("Successfully constructed k8s client")
 	return client, versiondClient, nil
+}
+
+// createZMSClient - create client to zms to make zms calls
+func createZMSClient(reloader *reloader.CertReloader, zmsURL string, disableKeepAlives bool) (*zms.ZMSClient, error) {
+	config := &tls.Config{}
+	config.GetClientCertificate = func(_ *tls.CertificateRequestInfo) (*tls.Certificate, error) {
+		return reloader.GetLatestCertificate(), nil
+	}
+	transport := &http.Transport{
+		TLSClientConfig:   config,
+		DisableKeepAlives: disableKeepAlives,
+	}
+	client := zms.NewClient(zmsURL, transport)
+	return &client, nil
 }
 
 // main code path
@@ -138,7 +155,7 @@ func main() {
 			log.Panicf("Error occurred when creating new reloader. Error: %v", err)
 		}
 		// use key and cert to create zmsClient for API calls
-		zmsClient, err = util.CreateZMSClient(certReloader, *zmsURL, *disableKeepAlives)
+		zmsClient, err = createZMSClient(certReloader, *zmsURL, *disableKeepAlives)
 		if err != nil {
 			log.Panicf("Error occurred when creating zms client. Error: %v", err)
 		}
