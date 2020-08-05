@@ -30,7 +30,6 @@ import (
 	"github.com/yahoo/k8s-athenz-syncer/pkg/controller"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/crypto"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/identity"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/reloader"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/util"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -75,7 +74,7 @@ func getClients(inClusterConfig *bool) (kubernetes.Interface, *athenzClientset.C
 }
 
 // createZMSClient - create client to zms to make zms calls
-func createZMSClient(reloader *reloader.CertReloader, zmsURL string, disableKeepAlives bool) (*zms.ZMSClient, error) {
+func createZMSClient(reloader *r.CertReloader, zmsURL string, disableKeepAlives bool) (*zms.ZMSClient, error) {
 	config := &tls.Config{}
 	config.GetClientCertificate = func(_ *tls.CertificateRequestInfo) (*tls.Certificate, error) {
 		return reloader.GetLatestCertificate(), nil
