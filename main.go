@@ -16,10 +16,8 @@ limitations under the License.
 package main
 
 import (
-	"crypto/tls"
 	"flag"
 	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -40,17 +38,10 @@ import (
 	r "github.com/yahoo/k8s-athenz-syncer/pkg/reloader"
 )
 
-func homeDir() string {
-	if h := os.Getenv("HOME"); h != "" {
-		return h
-	}
-	return os.Getenv("USERPROFILE") // windows
-}
-
 // getClients retrieve the Kubernetes cluster client and Athenz client
 func getClients(inClusterConfig *bool) (kubernetes.Interface, *athenzClientset.Clientset, error) {
 	var kubeconfig *string
-	if home := homeDir(); home != "" {
+	if home := util.HomeDir(); home != "" {
 		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
 	} else {
 		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
@@ -78,20 +69,6 @@ func getClients(inClusterConfig *bool) (kubernetes.Interface, *athenzClientset.C
 
 	log.Info("Successfully constructed k8s client")
 	return client, versiondClient, nil
-}
-
-// createZMSClient - create client to zms to make zms calls
-func createZMSClient(reloader *r.CertReloader, zmsURL string, disableKeepAlives bool) (*zms.ZMSClient, error) {
-	config := &tls.Config{}
-	config.GetClientCertificate = func(_ *tls.CertificateRequestInfo) (*tls.Certificate, error) {
-		return reloader.GetLatestCertificate(), nil
-	}
-	transport := &http.Transport{
-		TLSClientConfig:   config,
-		DisableKeepAlives: disableKeepAlives,
-	}
-	client := zms.NewClient(zmsURL, transport)
-	return &client, nil
 }
 
 // main code path
@@ -161,7 +138,7 @@ func main() {
 			log.Panicf("Error occurred when creating new reloader. Error: %v", err)
 		}
 		// use key and cert to create zmsClient for API calls
-		zmsClient, err = createZMSClient(certReloader, *zmsURL, *disableKeepAlives)
+		zmsClient, err = util.CreateZMSClient(certReloader, *zmsURL, *disableKeepAlives)
 		if err != nil {
 			log.Panicf("Error occurred when creating zms client. Error: %v", err)
 		}

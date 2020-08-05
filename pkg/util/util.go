@@ -16,8 +16,14 @@ limitations under the License.
 package util
 
 import (
+	"crypto/tls"
 	"fmt"
+	"net/http"
+	"os"
 	"strings"
+
+	"github.com/yahoo/athenz/clients/go/zms"
+	"github.com/yahoo/k8s-athenz-syncer/pkg/reloader"
 )
 
 // Util - struct with 2 fields adminDomain and list of system namespaces
@@ -98,4 +104,26 @@ func (u *Util) GetSystemNSDomains() []string {
 		domains = append(domains, domain)
 	}
 	return domains
+}
+
+// Shared Functions
+func HomeDir() string {
+	if h := os.Getenv("HOME"); h != "" {
+		return h
+	}
+	return os.Getenv("USERPROFILE") // windows
+}
+
+// CreateZMSClient - create client to zms to make zms calls
+func CreateZMSClient(reloader *reloader.CertReloader, zmsURL string, disableKeepAlives bool) (*zms.ZMSClient, error) {
+	config := &tls.Config{}
+	config.GetClientCertificate = func(_ *tls.CertificateRequestInfo) (*tls.Certificate, error) {
+		return reloader.GetLatestCertificate(), nil
+	}
+	transport := &http.Transport{
+		TLSClientConfig:   config,
+		DisableKeepAlives: disableKeepAlives,
+	}
+	client := zms.NewClient(zmsURL, transport)
+	return &client, nil
 }
