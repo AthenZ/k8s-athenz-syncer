@@ -101,7 +101,8 @@ func (u *Util) GetSystemNSDomains() []string {
 	return domains
 }
 
-// Shared Functions
+// HomeDir - check evironment and return home directory
+// Shared Functions with main.go and e2e test
 func HomeDir() string {
 	if h := os.Getenv("HOME"); h != "" {
 		return h

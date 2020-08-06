@@ -102,6 +102,7 @@ github.com/tevino/abool v0.0.0-20170917061928-9b9efcf221b5 h1:hNna6Fi0eP1f2sMBe/
 github.com/tevino/abool v0.0.0-20170917061928-9b9efcf221b5/go.mod h1:f1SCnEOt6sc3fOJfPQDRDzHOtSXuTtnz0ImG9kPRDV0=
 github.com/yahoo/athenz v1.8.40 h1:3bShw3QGUSLs5Dr0XNXO17pKfVA0Kwpr67JlSmHgKKI=
 github.com/yahoo/athenz v1.8.40/go.mod h1:zxWh0gZef6KGjH7+cHHWouyKmElR3jPx78or6S1Ep5Y=
+github.com/yahoo/athenz v1.9.12 h1:hFHXGlGTsVZ1em4GtSeHyszlhU6zWpNzG2Y1bWJgznY=
 golang.org/x/crypto v0.0.0-20181025213731-e84da0312774/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4 h1:HuIa8hRrWRSrqYzx1qI49NNxhdi2PrY7gxVSq1JjLDc=

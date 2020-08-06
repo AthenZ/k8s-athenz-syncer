@@ -29,12 +29,7 @@ var Global *Framework
 // Setup() create necessary clients for tests
 func setup() error {
 	// config
-	var kubeconfig *string
-	if home := util.HomeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	}
+	kubeconfig := flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	inClusterConfig := flag.Bool("inClusterConfig", true, "Set to true to use in cluster config.")
 	key := flag.String("key", "/var/run/athenz/service.key.pem", "Athenz private key file")
 	cert := flag.String("cert", "/var/run/athenz/service.cert.pem", "Athenz certificate file")
@@ -46,9 +41,16 @@ func setup() error {
 	// init logger
 	log.InitLogger(*logLoc, *logMode)
 
-	if *inClusterConfig {
-		emptystr := ""
-		kubeconfig = &emptystr
+	// if kubeconfig is empty
+	if *kubeconfig == "" {
+		if *inClusterConfig {
+			emptystr := ""
+			kubeconfig = &emptystr
+		} else {
+			if home := util.HomeDir(); home != "" {
+				kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+			}
+		}
 	}
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
