@@ -48,7 +48,8 @@ func setup() error {
 			kubeconfig = &emptystr
 		} else {
 			if home := util.HomeDir(); home != "" {
-				kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+				defaultconfig := filepath.Join(home, ".kube", "config")
+				kubeconfig = &defaultconfig
 			}
 		}
 	}
