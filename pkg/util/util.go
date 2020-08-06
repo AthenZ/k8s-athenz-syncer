@@ -17,6 +17,7 @@ package util
 
 import (
 	"fmt"
+	"os"
 	"strings"
 )
 
@@ -98,4 +99,13 @@ func (u *Util) GetSystemNSDomains() []string {
 		domains = append(domains, domain)
 	}
 	return domains
+}
+
+// HomeDir - check evironment and return home directory
+// Shared Functions with main.go and e2e test
+func HomeDir() string {
+	if h := os.Getenv("HOME"); h != "" {
+		return h
+	}
+	return os.Getenv("USERPROFILE") // windows
 }

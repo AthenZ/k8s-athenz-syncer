@@ -40,17 +40,10 @@ import (
 	r "github.com/yahoo/k8s-athenz-syncer/pkg/reloader"
 )
 
-func homeDir() string {
-	if h := os.Getenv("HOME"); h != "" {
-		return h
-	}
-	return os.Getenv("USERPROFILE") // windows
-}
-
 // getClients retrieve the Kubernetes cluster client and Athenz client
 func getClients(inClusterConfig *bool) (kubernetes.Interface, *athenzClientset.Clientset, error) {
 	var kubeconfig *string
-	if home := homeDir(); home != "" {
+	if home := util.HomeDir(); home != "" {
 		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
 	} else {
 		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
