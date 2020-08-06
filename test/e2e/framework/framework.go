@@ -9,16 +9,19 @@ import (
 
 	"github.com/yahoo/athenz/clients/go/zms"
 	athenzClientset "github.com/yahoo/k8s-athenz-syncer/pkg/client/clientset/versioned"
+	athenzInformer "github.com/yahoo/k8s-athenz-syncer/pkg/client/informers/externalversions/athenz/v1"
+	"github.com/yahoo/k8s-athenz-syncer/pkg/cr"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/util"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
 type Framework struct {
-	K8sClient           kubernetes.Interface
-	ZMSClient           zms.ZMSClient
-	AthenzDomainsClient athenzClientset.Clientset
+	K8sClient kubernetes.Interface
+	ZMSClient zms.ZMSClient
+	CRClient  cr.CRUtil
 }
 
 var Global *Framework
@@ -65,6 +68,9 @@ func setup() error {
 		log.Error("Failed to create athenz domains client")
 		return err
 	}
+	// set up cr informer to get athenzdomains resources
+	crIndexInformer := athenzInformer.NewAthenzDomainInformer(athenzClient, 0, cache.Indexers{})
+	crutil := cr.NewCRUtil(athenzClient, crIndexInformer)
 
 	// set up zms client
 	zmsclient, err := setupZMSClient(*key, *cert, *zmsURL)
@@ -74,13 +80,14 @@ func setup() error {
 	}
 
 	Global = &Framework{
-		K8sClient:           k8sclient,
-		ZMSClient:           *zmsclient,
-		AthenzDomainsClient: *athenzClient,
+		K8sClient: k8sclient,
+		ZMSClient: *zmsclient,
+		CRClient:  *crutil,
 	}
 	return nil
 }
 
+// set up zms client, skipping cert reloader
 func setupZMSClient(key string, cert string, zmsURL string) (*zms.ZMSClient, error) {
 	clientCert, err := tls.LoadX509KeyPair(cert, key)
 	if err != nil {
@@ -96,6 +103,7 @@ func setupZMSClient(key string, cert string, zmsURL string) (*zms.ZMSClient, err
 	return &client, nil
 }
 
+// teardown Framework
 func teardown() error {
 	Global = nil
 	log.Info("e2e teardown successfully")
