@@ -13,4 +13,4 @@ RUN apk --update add ca-certificates
 
 COPY --from=builder /go/bin/k8s-athenz-syncer /usr/bin/k8s-athenz-syncer
 
-CMD ["/usr/bin/k8s-athenz-syncer"]
+ENTRYPOINT ["/usr/bin/k8s-athenz-syncer"]
