@@ -1,6 +1,6 @@
 # k8s-athenz-syncer
 
-K8s-athenz-syncer is a controller that synchronizes the [Athenz](https://athenz.io) domain data including the roles, services and policies 
+K8s-athenz-syncer is a controller that synchronizes the [Athenz](https://athenz.io) domain data including the roles, services and policies
 into corresponding Kubernetes [AthenzDomain](https://github.com/yahoo/k8s-athenz-istio-auth/tree/master/pkg) custom resources.
 
 ### Architecture
@@ -23,7 +23,7 @@ Athenz is a generic RBAC provider for Kubernetes resource access management and 
 authentication and authorization. An Athenz domain contains a set of roles and policies defined by service admins. The policies can grant or deny an Athenz role with permissions to perform specific actions on services or resources. An Athenz role can comprise of a set of principals which could represent end users or other services.
 
 Every Kubernetes namespace is mapped to an Athenz domain and the Athenz roles and policies
-defined within each domain are used to express access control rules to Kubernetes resources such as deployments, 
+defined within each domain are used to express access control rules to Kubernetes resources such as deployments,
 services, ingresses, etc. associated with the namespace.
 
 ***
@@ -37,7 +37,7 @@ A kubernetes namespace is mapped to an Athenz domain with the following pattern:
 | {system-namespace} | {special-cluster-admin-managed-domain} |
 | - dashes '-' in namespace replaced with '.' in domain | |
 | - double dashes '--' in namespace replaced with '-' in domain | |
-| *e.g.* sports-frontend| sports.frontend |   
+| *e.g.* sports-frontend| sports.frontend |
 | **Resources** | **Resources** |
 | - {namespace-scoped}| {user-managed-domain-prefixed} |
 | *e.g.* sports-frontend/fantasy-prod-deployment| sports.frontend:fantasy-dashboard|
@@ -46,19 +46,19 @@ A kubernetes namespace is mapped to an Athenz domain with the following pattern:
 | *e.g.* sports-frontend/fantasy-dashboard| sports.frontend::fantasy-dashboard|
 | **RBAC** - Role and RoleBindings| Roles and Policies |
 | - {Role.rule} | {Policy.assertion} |
-| - {RoleBinding.Subjects} | {Role} | 
- 
-Note: Kubernetes system namespaces such as "kube-system", "istio-system" are mapped to an equivalent Athenz domain 
+| - {RoleBinding.Subjects} | {Role} |
+
+Note: Kubernetes system namespaces such as "kube-system", "istio-system" are mapped to an equivalent Athenz domain
 with the format: `<cluster-admin-domain>.<cluster-namespace>`
 ***
 
-While Athenz ZMS provides APIs to perform resource access checks against user/client credentials, caching the relevant 
+While Athenz ZMS provides APIs to perform resource access checks against user/client credentials, caching the relevant
 policies as Kubernetes resources allows any in-cluster auth provider service to perform in-memory validation of user or
 client credentials without worrying about the Athenz ZMS/ZTS service availability.
 
-K8s-athenz-syncer calls Athenz ZMS API [GetSignedDomains() API](https://github.com/yahoo/athenz/blob/master/ui/rdl-api.md#getsigneddomainsobj-functionerr-json-response--) to fetch the entire contents of an Athenz domain signed by the ZMS including roles, principals and policies with signatures and creates Kubernetes Custom Resources that store the domain data in the cluster so that applications can do the security checks based on local cached data. 
+K8s-athenz-syncer calls Athenz ZMS API [GetSignedDomains() API](https://github.com/yahoo/athenz/blob/master/ui/rdl-api.md#getsigneddomainsobj-functionerr-json-response--) to fetch the entire contents of an Athenz domain signed by the ZMS including roles, principals and policies with signatures and creates Kubernetes Custom Resources that store the domain data in the cluster so that applications can do the security checks based on local cached data.
 
-The controller also runs a cron that periodically fetches the list of Athenz domains that were modified during the cron 
+The controller also runs a cron that periodically fetches the list of Athenz domains that were modified during the cron
 interval and then fetches the signed contents for each domain and stores them as the AthenzDomain Custom Resource in the cluster in order to keep all policies in local cache updated. There is also a full resync cron that adds all the watched namespaces to the controller work queue so that all of Kubernetes AthenzDomains Custom Resources are resynced after a full resync interval.
 
 #### Example AthenzDomain CR
@@ -69,12 +69,12 @@ items:
   kind: AthenzDomain
   metadata:
     creationTimestamp: 2019-01-01T00:00:00Z
-    generation: 
+    generation:
     name: home.test
     namespace: home-test
-    resourceVersion: 
-    selfLink: 
-    uid: 
+    resourceVersion:
+    selfLink:
+    uid:
   spec:
     domains:
       domain:
@@ -98,12 +98,12 @@ items:
                 resource: home.test:*
                 action: "*"
                 effect: ALLOW
-        signature: 
+        signature:
         keyId: xyz
         services: []
         entities:
         modified: '2019-01-01T00:00:00.000Z'
-    signature: 
+    signature:
     keyId: xyz
 ```
 
@@ -128,13 +128,13 @@ In order to tell SIA which service to provide an X.509 certificate to, a service
 ```
 kubectl apply -f k8s/serviceaccount.yaml
 ```
-or 
+or
 ```
 kubectl create serviceaccount k8s-athenz-syncer
 ```
 
 #### ClusterRole and ClusterRoleBinding
-This controller requires RBAC to create, update, delete, watch and list all Athenzdomains Custom Resources in the cluster. It also has a watch and list on namespaces in order to know which domains to look up from Athenz. 
+This controller requires RBAC to create, update, delete, watch and list all Athenzdomains Custom Resources in the cluster. It also has a watch and list on namespaces in order to know which domains to look up from Athenz.
 
 **NOTE:** If you are deploying to a non-default namespace, make sure to update the `k8s/clusterrolebinding.yaml` subject namespace accordingly.
 ```
@@ -156,7 +156,7 @@ K8s-athenz-syncer has a variety of parameters that can be configured, they are g
 - cert (default: /var/run/athenz/service.cert.pem): path to X.509 certificate file to use for zms authentication
 - key (default: /var/run/athenz/service.key.pem): path to private key file for zms authentication
 - zms-url (default: https://zms.url.com): athenz full zms url including api path
-- update-cron (default: 1m0s): sleep interval for controller update cron 
+- update-cron (default: 1m0s): sleep interval for controller update cron
 - resync-cron (default: 1h0m0s) sleep interval for controller full resync cron
 - queue-delay-interval (default: 250ms) delay interval time for workqueue
 - admin-domain (default: "") admin domain that can be specified in order to fetch admin domains from Athenz
@@ -165,7 +165,7 @@ K8s-athenz-syncer has a variety of parameters that can be configured, they are g
 ```
 
 ## Usage
-Once the controller is up and running, the controller will create Kubernetes AthenzDomains Custom Resources in the cluster accordingly. Users and Applications can consume those AthenzDomains CR to get security policy information for access control checks. 
+Once the controller is up and running, the controller will create Kubernetes AthenzDomains Custom Resources in the cluster accordingly. Users and Applications can consume those AthenzDomains CR to get security policy information for access control checks.
 1. To see all the AthenzDomains CR created, run `kubectl get athenzdomains --all-namespaces`
 2. In order to use AthenzDomains CR in applications, create AthenzDomains clientset and informers to retrieve the resources.
 
