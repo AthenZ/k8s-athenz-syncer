@@ -1,4 +1,4 @@
-FROM golang:1.12.4 as builder
+FROM golang:1.14.7 as builder
 
 WORKDIR $GOPATH/src/github.com/yahoo/k8s-athenz-syncer
 
