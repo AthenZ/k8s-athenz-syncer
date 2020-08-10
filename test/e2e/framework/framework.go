@@ -40,11 +40,11 @@ var (
 // Setup() create necessary clients for tests
 func setup(stopCh <-chan struct{}) error {
 	// config
-	kubeconfig := flag.String("kubeconfig", "/etc/sysconfig/kubeconfig", "absolute path to the kubeconfig file")
-	inClusterConfig := flag.Bool("inClusterConfig", false, "Set to true to use in cluster config.")
-	key := flag.String("key", "/var/lib/sia/keys/k8s.omega.stage.stage1-bf1-master.key.pem", "Athenz private key file")
-	cert := flag.String("cert", "/var/lib/sia/certs/k8s.omega.stage.stage1-bf1-master.cert.pem", "Athenz certificate file")
-	zmsURL := flag.String("zms-url", "https://zms.athenz.ouroath.com:4443/zms/v1", "Athenz ZMS API URL")
+	kubeconfig := flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+	inClusterConfig := flag.Bool("inClusterConfig", true, "Set to true to use in cluster config.")
+	key := flag.String("key", "", "Athenz private key file")
+	cert := flag.String("cert", "", "Athenz certificate file")
+	zmsURL := flag.String("zms-url", "", "Athenz ZMS API URL")
 	logLoc := flag.String("log-location", "/var/log/k8s-athenz-syncer.log", "log location")
 	logMode := flag.String("log-mode", "info", "logger mode")
 	flag.Parse()
