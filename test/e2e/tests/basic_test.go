@@ -97,6 +97,7 @@ func TestTrustDomain(t *testing.T) {
 	}
 	fmt.Println("Test 2 finished")
 }
+
 func TestNamespace(t *testing.T) {
 	f := framework.Global
 	_, err := f.K8sClient.CoreV1().Namespaces().Create(&v1.Namespace{
