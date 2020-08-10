@@ -13,6 +13,8 @@ import (
 	"github.com/yahoo/k8s-athenz-syncer/pkg/cr"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/util"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
@@ -26,15 +28,24 @@ type Framework struct {
 
 var Global *Framework
 
+var (
+	domain        = zms.DomainName("k8s.omega.stage.kube-test")
+	roleName      = zms.EntityName("syncer-e2e")
+	roleResource  = zms.ResourceName("syncer-e2e")
+	trustroleName = zms.EntityName("test-trustrole")
+	trustdomain   = "prod-eng.omega.acceptancetest.trust-domain"
+	namespace     = "prod--eng-omega-acceptancetest-test--domain"
+)
+
 // Setup() create necessary clients for tests
-func setup() error {
+func setup(stopCh <-chan struct{}) error {
 	// config
-	kubeconfig := flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	inClusterConfig := flag.Bool("inClusterConfig", true, "Set to true to use in cluster config.")
-	key := flag.String("key", "/var/run/athenz/service.key.pem", "Athenz private key file")
-	cert := flag.String("cert", "/var/run/athenz/service.cert.pem", "Athenz certificate file")
-	zmsURL := flag.String("zms-url", "", "Athenz ZMS API URL")
-	logLoc := flag.String("log-location", "/var/log/k8s-athenz-syncer/k8s-athenz-syncer.log", "log location")
+	kubeconfig := flag.String("kubeconfig", "/etc/sysconfig/kubeconfig", "absolute path to the kubeconfig file")
+	inClusterConfig := flag.Bool("inClusterConfig", false, "Set to true to use in cluster config.")
+	key := flag.String("key", "/var/lib/sia/keys/k8s.omega.stage.stage1-bf1-master.key.pem", "Athenz private key file")
+	cert := flag.String("cert", "/var/lib/sia/certs/k8s.omega.stage.stage1-bf1-master.cert.pem", "Athenz certificate file")
+	zmsURL := flag.String("zms-url", "https://zms.athenz.ouroath.com:4443/zms/v1", "Athenz ZMS API URL")
+	logLoc := flag.String("log-location", "/var/log/k8s-athenz-syncer.log", "log location")
 	logMode := flag.String("log-mode", "info", "logger mode")
 	flag.Parse()
 
@@ -73,6 +84,15 @@ func setup() error {
 	}
 	// set up cr informer to get athenzdomains resources
 	crIndexInformer := athenzInformer.NewAthenzDomainInformer(athenzClient, 0, cache.Indexers{})
+
+	go crIndexInformer.Run(stopCh)
+	// do the initial synchronization (one time) to populate resources
+	if !cache.WaitForCacheSync(stopCh, crIndexInformer.HasSynced) {
+		utilruntime.HandleError(fmt.Errorf("Error syncing cache"))
+		return fmt.Errorf("Error syncing cache")
+	}
+	log.Info("athenz domains cache sync complete")
+
 	crutil := cr.NewCRUtil(athenzClient, crIndexInformer)
 
 	// set up zms client
@@ -108,6 +128,31 @@ func setupZMSClient(key string, cert string, zmsURL string) (*zms.ZMSClient, err
 
 // teardown Framework
 func teardown() error {
+	f := Global
+	err := f.ZMSClient.DeleteRole(domain, roleName, "")
+	if err != nil {
+		log.Error("Unable to delete test1 role")
+		return err
+	}
+	err = f.ZMSClient.DeleteRole(domain, trustroleName, "")
+	if err != nil {
+		log.Error("Unable to delete test2 role")
+		return err
+	}
+	err = f.CRClient.RemoveAthenzDomain(trustdomain)
+	if err != nil {
+		log.Error("Unable to remove created athenzdomains")
+		return err
+	}
+	deletePolicy := metav1.DeletePropagationForeground
+	deleteOptions := &metav1.DeleteOptions{
+		PropagationPolicy: &deletePolicy,
+	}
+	err = f.K8sClient.CoreV1().Namespaces().Delete(namespace, deleteOptions)
+	if err != nil {
+		log.Error("Unable to delete test namespace")
+		return err
+	}
 	Global = nil
 	log.Info("e2e teardown successfully")
 	return nil
