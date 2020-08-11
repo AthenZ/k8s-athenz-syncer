@@ -17,8 +17,10 @@ package main
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/signal"
@@ -74,10 +76,19 @@ func getClients(inClusterConfig *bool) (kubernetes.Interface, *athenzClientset.C
 }
 
 // createZMSClient - create client to zms to make zms calls
-func createZMSClient(reloader *r.CertReloader, zmsURL string, disableKeepAlives bool) (*zms.ZMSClient, error) {
+func createZMSClient(reloader *r.CertReloader, zmsURL, caCert string, disableKeepAlives bool) (*zms.ZMSClient, error) {
 	config := &tls.Config{}
 	config.GetClientCertificate = func(_ *tls.CertificateRequestInfo) (*tls.Certificate, error) {
 		return reloader.GetLatestCertificate(), nil
+	}
+	if caCert != "" {
+		c, err := ioutil.ReadFile(caCert)
+		if err != nil {
+			return nil, err
+		}
+		certPool := x509.NewCertPool()
+		certPool.AppendCertsFromPEM(c)
+		config.RootCAs = certPool
 	}
 	transport := &http.Transport{
 		TLSClientConfig:   config,
@@ -92,6 +103,7 @@ func main() {
 	// command line arguments for athenz initial setup
 	key := flag.String("key", "/var/run/athenz/service.key.pem", "Athenz private key file")
 	cert := flag.String("cert", "/var/run/athenz/service.cert.pem", "Athenz certificate file")
+	caCert := flag.String("cacert", "", "Athenz CA certificate file")
 	zmsURL := flag.String("zms-url", "", "Athenz ZMS API URL")
 	updateCron := flag.String("update-cron", "1m0s", "Update cron sleep time")
 	resyncCron := flag.String("resync-cron", "1h0m0s", "Cron full resync sleep time")
@@ -154,7 +166,7 @@ func main() {
 			log.Panicf("Error occurred when creating new reloader. Error: %v", err)
 		}
 		// use key and cert to create zmsClient for API calls
-		zmsClient, err = createZMSClient(certReloader, *zmsURL, *disableKeepAlives)
+		zmsClient, err = createZMSClient(certReloader, *zmsURL, *caCert, *disableKeepAlives)
 		if err != nil {
 			log.Panicf("Error occurred when creating zms client. Error: %v", err)
 		}
