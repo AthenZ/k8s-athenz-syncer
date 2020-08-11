@@ -59,7 +59,12 @@ func newCron() *Cron {
 		Name: "home-test",
 	}})
 	cr := cr.NewCRUtil(athenzclientset, informer)
-	return NewCron(clientset, 20*time.Second, time.Minute, etag, &zmsClient, nsIndexInformer, queue, util, cr)
+	cm := &AthenzContactTimeConfigMap{
+		Namespace: "kube-yahoo",
+		Name:      "athenzcall-config",
+		Key:       "latest_contact",
+	}
+	return NewCron(clientset, 20*time.Second, time.Minute, etag, &zmsClient, nsIndexInformer, queue, util, cr, cm)
 }
 
 func TestRequestCall(t *testing.T) {
@@ -160,7 +165,7 @@ func TestUpdateAthenzContactTime(t *testing.T) {
 	c := newCron()
 	log.InitLogger("/tmp/log/test.log", "info")
 	c.UpdateAthenzContactTime("2019-01-01T01:01:01.111Z")
-	configMap, err := c.k8sClient.CoreV1().ConfigMaps(athenzMapLoc).Get(athenzMapName, metav1.GetOptions{})
+	configMap, err := c.k8sClient.CoreV1().ConfigMaps(c.contactTimeCm.Namespace).Get(c.contactTimeCm.Name, metav1.GetOptions{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -168,8 +173,8 @@ func TestUpdateAthenzContactTime(t *testing.T) {
 		t.Error("New config map created should not be nil")
 	}
 	c.UpdateAthenzContactTime("2020-02-02T01:01:01.111Z")
-	configMap, err = c.k8sClient.CoreV1().ConfigMaps(athenzMapLoc).Get(athenzMapName, metav1.GetOptions{})
-	if configMap.Data[athenzMapKey] != "2020-02-02T01:01:01.111Z" {
+	configMap, err = c.k8sClient.CoreV1().ConfigMaps(c.contactTimeCm.Namespace).Get(c.contactTimeCm.Name, metav1.GetOptions{})
+	if configMap.Data[c.contactTimeCm.Key] != "2020-02-02T01:01:01.111Z" {
 		t.Error("Failed to update the latest timestamp")
 	}
 }
