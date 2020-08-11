@@ -175,7 +175,7 @@ K8s-athenz-syncer has a variety of parameters that can be configured, they are g
 
 ## Usage
 Once the controller is up and running, the controller will create Kubernetes AthenzDomains Custom Resources in the cluster accordingly. Users and Applications can consume those AthenzDomains CR to get security policy information for access control checks.
-1. To see all the AthenzDomains CR created, run `kubectl get athenzdomains --all-namespaces`
+1. To see all the AthenzDomains CR created, run `kubectl get athenzdomains`
 2. In order to use AthenzDomains CR in applications, create AthenzDomains clientset and informers to retrieve the resources.
 
 ## Contribute
