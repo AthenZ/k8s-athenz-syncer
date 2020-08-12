@@ -23,21 +23,18 @@ import (
 )
 
 type Framework struct {
-	K8sClient kubernetes.Interface
-	ZMSClient zms.ZMSClient
-	CRClient  cr.CRUtil
+	K8sClient       kubernetes.Interface
+	ZMSClient       zms.ZMSClient
+	CRClient        cr.CRUtil
+	RoleDomain      string
+	RoleName        string
+	TrustDomain     string
+	TrustRole       string
+	NamespaceDomain string
+	MyUtil          util.Util
 }
 
 var Global *Framework
-
-var (
-	domain        = zms.DomainName("k8s.omega.stage.kube-test")
-	roleName      = zms.EntityName("syncer-e2e")
-	roleResource  = zms.ResourceName("syncer-e2e")
-	trustroleName = zms.EntityName("test-trustrole")
-	trustdomain   = "prod-eng.omega.acceptancetest.trust-domain"
-	namespace     = "prod--eng-omega-acceptancetest-test--domain"
-)
 
 // Setup() create necessary clients for tests
 func setup(stopCh <-chan struct{}) error {
@@ -49,6 +46,11 @@ func setup(stopCh <-chan struct{}) error {
 	zmsURL := flag.String("zms-url", "", "Athenz ZMS API URL")
 	logLoc := flag.String("log-location", "/var/log/k8s-athenz-syncer.log", "log location")
 	logMode := flag.String("log-mode", "info", "logger mode")
+	roleTestDomain := flag.String("e2e-test1-domain", "k8s.omega.stage.kube-test", "athenz domain used for e2e test 1")
+	roleName := flag.String("e2e-test1-role", "syncer-e2e", "athenz role used for e2e test 1")
+	trustDomain := flag.String("e2e-test2-domain", "prod-eng.omega.acceptancetest.trust-domain", "athenz trust domain used for e2e test 2")
+	trustRoleName := flag.String("e2e-test2-role", "test-trustrole", "athenz trust role used for e2e test 2")
+	namespaceDomain := flag.String("e2e-test3-domain", "prod-eng.omega.acceptancetest.test-domain", "athenz domain used for e2e test 3")
 	flag.Parse()
 
 	// init logger
@@ -103,11 +105,20 @@ func setup(stopCh <-chan struct{}) error {
 		log.Error("Failed to create zms client")
 		return err
 	}
+	adminDomain := ""
+	systemNS := []string{}
+	domainUtil := util.NewUtil(adminDomain, systemNS)
 
 	Global = &Framework{
-		K8sClient: k8sclient,
-		ZMSClient: *zmsclient,
-		CRClient:  *crutil,
+		K8sClient:       k8sclient,
+		ZMSClient:       *zmsclient,
+		CRClient:        *crutil,
+		RoleDomain:      *roleTestDomain,
+		RoleName:        *roleName,
+		TrustDomain:     *trustDomain,
+		TrustRole:       *trustRoleName,
+		NamespaceDomain: *namespaceDomain,
+		MyUtil:          *domainUtil,
 	}
 	return nil
 }
@@ -131,17 +142,20 @@ func setupZMSClient(key string, cert string, zmsURL string) (*zms.ZMSClient, err
 // teardown Framework
 func teardown() error {
 	f := Global
+	domain := zms.DomainName(f.RoleDomain)
+	roleName := zms.EntityName(f.RoleName)
 	err := f.ZMSClient.DeleteRole(domain, roleName, "")
 	if err != nil {
 		log.Error("Unable to delete test1 role")
 		return err
 	}
+	trustroleName := zms.EntityName(f.TrustRole)
 	err = f.ZMSClient.DeleteRole(domain, trustroleName, "")
 	if err != nil {
 		log.Error("Unable to delete test2 role")
 		return err
 	}
-	err = f.CRClient.RemoveAthenzDomain(trustdomain)
+	err = f.CRClient.RemoveAthenzDomain(f.TrustDomain)
 	if err != nil {
 		log.Error("Unable to remove created athenzdomains")
 		return err
@@ -150,6 +164,7 @@ func teardown() error {
 	deleteOptions := &metav1.DeleteOptions{
 		PropagationPolicy: &deletePolicy,
 	}
+	namespace := f.MyUtil.DomainToNamespace(f.NamespaceDomain)
 	err = f.K8sClient.CoreV1().Namespaces().Delete(namespace, deleteOptions)
 	if err != nil {
 		log.Error("Unable to delete test namespace")
