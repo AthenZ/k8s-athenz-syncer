@@ -1,6 +1,6 @@
 module github.com/yahoo/k8s-athenz-syncer
 
-go 1.12
+go 1.14
 
 require (
 	github.com/ardielle/ardielle-go v1.5.2
