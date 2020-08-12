@@ -46,11 +46,11 @@ func setup(stopCh <-chan struct{}) error {
 	zmsURL := flag.String("zms-url", "", "Athenz ZMS API URL")
 	logLoc := flag.String("log-location", "/var/log/k8s-athenz-syncer.log", "log location")
 	logMode := flag.String("log-mode", "info", "logger mode")
-	roleTestDomain := flag.String("e2e-test1-domain", "k8s.omega.stage.kube-test", "athenz domain used for e2e test 1")
-	roleName := flag.String("e2e-test1-role", "syncer-e2e", "athenz role used for e2e test 1")
-	trustDomain := flag.String("e2e-test2-domain", "prod-eng.omega.acceptancetest.trust-domain", "athenz trust domain used for e2e test 2")
+	roleTestDomain := flag.String("e2e-test1-domain", "test-domain", "athenz domain used for e2e test 1")
+	roleName := flag.String("e2e-test1-role", "test-role", "athenz role used for e2e test 1")
+	trustDomain := flag.String("e2e-test2-domain", "trust-domain", "athenz trust domain used for e2e test 2")
 	trustRoleName := flag.String("e2e-test2-role", "test-trustrole", "athenz trust role used for e2e test 2")
-	namespaceDomain := flag.String("e2e-test3-domain", "prod-eng.omega.acceptancetest.test-domain", "athenz domain used for e2e test 3")
+	namespaceDomain := flag.String("e2e-test3-domain", "test-ns-domain", "athenz domain used for e2e test 3")
 	flag.Parse()
 
 	// init logger
