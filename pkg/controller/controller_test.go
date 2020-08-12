@@ -31,6 +31,7 @@ import (
 	"github.com/yahoo/athenz/clients/go/zms"
 	athenz_domain "github.com/yahoo/k8s-athenz-syncer/pkg/apis/athenz/v1"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/client/clientset/versioned/fake"
+	"github.com/yahoo/k8s-athenz-syncer/pkg/cron"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/util"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 )
@@ -45,7 +46,12 @@ func newController() *Controller {
 	clientset := k8sfake.NewSimpleClientset()
 	zmsclient := zms.NewClient("https://zms.athenz.com", &http.Transport{})
 	util := util.NewUtil("admin.domain", []string{"kube-system", "kube-public", "kube-test"})
-	newCtl := NewController(clientset, athenzclientset, &zmsclient, time.Minute, time.Hour, 250*time.Millisecond, util)
+	cm := &cron.AthenzContactTimeConfigMap{
+		Namespace: "kube-yahoo",
+		Name:      "athenzcall-config",
+		Key:       "latest_contact",
+	}
+	newCtl := NewController(clientset, athenzclientset, &zmsclient, time.Minute, time.Hour, 250*time.Millisecond, util, cm)
 	return newCtl
 }
 

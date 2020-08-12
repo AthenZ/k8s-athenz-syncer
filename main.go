@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/yahoo/k8s-athenz-syncer/pkg/controller"
+	"github.com/yahoo/k8s-athenz-syncer/pkg/cron"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/crypto"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/identity"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/util"
@@ -106,6 +107,9 @@ func main() {
 	caCert := flag.String("cacert", "", "Athenz CA certificate file")
 	zmsURL := flag.String("zms-url", "", "Athenz ZMS API URL")
 	updateCron := flag.String("update-cron", "1m0s", "Update cron sleep time")
+	athenzContactTimeCmNs := flag.String("athenz-contact-time-cm-ns", "kube-yahoo", "Namespace of ConfigMap to record the latest time that the Update Cron contacted Athenz")
+	athenzContactTimeCmName := flag.String("athenz-contact-time-cm-name", "athenzcall-config", "Name of ConfigMap to record the latest time that the Update Cron contacted Athenz")
+	athenzContactTimeCmKey := flag.String("athenz-contact-time-cm-key", "latest_contact", "Key of ConfigMap to record the latest time that the Update Cron contacted Athenz")
 	resyncCron := flag.String("resync-cron", "1h0m0s", "Cron full resync sleep time")
 	queueDelayInterval := flag.String("queue-delay-interval", "250ms", "Delay interval time for workqueue")
 	adminDomain := flag.String("admin-domain", "", "admin domain")
@@ -199,7 +203,13 @@ func main() {
 		log.Panicf("Queue delay input is invalid. Error: %v", err)
 	}
 
-	controller := controller.NewController(k8sClient, versiondClient, zmsClient, updatePeriod, resyncPeriod, delayInterval, util)
+	cm := &cron.AthenzContactTimeConfigMap{
+		Namespace: *athenzContactTimeCmNs,
+		Name:      *athenzContactTimeCmName,
+		Key:       *athenzContactTimeCmKey,
+	}
+
+	controller := controller.NewController(k8sClient, versiondClient, zmsClient, updatePeriod, resyncPeriod, delayInterval, util, cm)
 
 	// use a channel to synchronize the finalization for a graceful shutdown
 	defer close(stopCh)
