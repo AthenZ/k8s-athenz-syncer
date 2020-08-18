@@ -13,18 +13,29 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
+// TestBasicRoleUpdate - adds a new role in Athenz and tests if syncer updates the corresponding AthenzDomains resource
 func TestBasicRoleUpdate(t *testing.T) {
 	f := framework.Global
+	// pre-check to see if the target athenzdomains resource exists before modifying
+	_, exists, err := f.CRClient.GetCRByName(f.RoleDomain)
+	if err != nil {
+		t.Error("Pre-Check Error while finding athenzdomain resource from store")
+	}
+	if !exists {
+		t.Error("Pre-Check Error: Did not find target domain cr")
+	}
+	// adding role to Athenz
 	domain := zms.DomainName(f.RoleDomain)
 	roleName := zms.EntityName(f.RoleName)
 	roleResource := zms.ResourceName(f.RoleName)
 	role := zms.Role{
 		Name: roleResource,
 	}
-	err := f.ZMSClient.PutRole(domain, roleName, "", &role)
+	err = f.ZMSClient.PutRole(domain, roleName, "", &role)
 	if err != nil {
 		t.Errorf("Unable to add role")
 	}
+	// checking for updates in cr
 	err = wait.PollImmediate(time.Second*30, time.Minute*3, func() (bool, error) {
 		cr, exists, err := f.CRClient.GetCRByName(f.RoleDomain)
 		if err != nil {
@@ -57,8 +68,26 @@ func TestBasicRoleUpdate(t *testing.T) {
 	}
 }
 
+// TestTrustDomain - adds a trust role in Athenz and tests if syncer updates the original AthenzDomains resource
+// and if a new trust domain AthenzDomains is created
 func TestTrustDomain(t *testing.T) {
 	f := framework.Global
+	// pre-check to see if the target domain exists and trust domain does not exist
+	_, exists, err := f.CRClient.GetCRByName(f.RoleDomain)
+	if err != nil {
+		t.Error("Pre-Check Error while finding athenzdomains resource in store")
+	}
+	if !exists {
+		t.Error("Pre-Check Error: Did not find target domain cr")
+	}
+	_, exists, err = f.CRClient.GetCRByName(f.TrustDomain)
+	if err != nil {
+		t.Error("Pre-Check Error while finding trust domain resource from store")
+	}
+	if exists {
+		t.Error("Pre-Check Error: trust domain cr already exists before test")
+	}
+	// adding trust role to Athenz
 	domain := zms.DomainName(f.RoleDomain)
 	trustdomain := zms.DomainName(f.TrustDomain)
 	trustroleName := zms.EntityName(f.TrustRole)
@@ -67,10 +96,11 @@ func TestTrustDomain(t *testing.T) {
 		Name:  trustroleResource,
 		Trust: trustdomain,
 	}
-	err := f.ZMSClient.PutRole(domain, trustroleName, "", &trustRole)
+	err = f.ZMSClient.PutRole(domain, trustroleName, "", &trustRole)
 	if err != nil {
 		t.Error("Unable to add trust role")
 	}
+	// checking for updates in cr
 	err = wait.PollImmediate(time.Second*30, time.Minute*3, func() (bool, error) {
 		cr, exists, err := f.CRClient.GetCRByName(f.RoleDomain)
 		if err != nil {
@@ -111,10 +141,20 @@ func TestTrustDomain(t *testing.T) {
 	}
 }
 
+// TestNamespace - adds a namespace in cluster and checks if syncer creates AthenzDomains resource for the new namespace
 func TestNamespace(t *testing.T) {
 	f := framework.Global
+	// pre-check to see namespace domain does not exist before test
+	_, exists, err := f.CRClient.GetCRByName(f.NamespaceDomain)
+	if err != nil {
+		t.Error("Pre-Check Error while finding athenzdomains resource from store")
+	}
+	if exists {
+		t.Error("Pre-Check Error: Namespace Domain cr already exists in store before test")
+	}
+	// adding namespace to cluster
 	namespace := f.MyUtil.DomainToNamespace(f.NamespaceDomain)
-	_, err := f.K8sClient.CoreV1().Namespaces().Create(&v1.Namespace{
+	_, err = f.K8sClient.CoreV1().Namespaces().Create(&v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: namespace,
 		},
@@ -122,6 +162,7 @@ func TestNamespace(t *testing.T) {
 	if err != nil {
 		t.Error("Unable to create new namespace")
 	}
+	// checking new namespace domain cr
 	err = wait.PollImmediate(time.Second*30, time.Minute*3, func() (bool, error) {
 		_, exists, err := f.CRClient.GetCRByName(f.NamespaceDomain)
 		if err != nil {
