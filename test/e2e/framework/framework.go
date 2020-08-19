@@ -39,18 +39,18 @@ var Global *Framework
 // Setup() create necessary clients for tests
 func setup(stopCh <-chan struct{}) error {
 	// config
-	kubeconfig := flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	inClusterConfig := flag.Bool("inClusterConfig", true, "Set to true to use in cluster config.")
-	key := flag.String("key", "/var/run/athenz/service.key.pem", "Athenz private key file")
-	cert := flag.String("cert", "/var/run/athenz/service.cert.pem", "Athenz certificate file")
-	zmsURL := flag.String("zms-url", "", "Athenz ZMS API URL")
+	kubeconfig := flag.String("kubeconfig", "/etc/sysconfig/kubeconfig", "absolute path to the kubeconfig file")
+	inClusterConfig := flag.Bool("inClusterConfig", false, "Set to true to use in cluster config.")
+	key := flag.String("key", "/var/lib/sia/keys/k8s.omega.stage.stage1-bf1-master.key.pem", "Athenz private key file")
+	cert := flag.String("cert", "/var/lib/sia/certs/k8s.omega.stage.stage1-bf1-master.cert.pem", "Athenz certificate file")
+	zmsURL := flag.String("zms-url", "https://zms.athenz.ouroath.com:4443/zms/v1", "Athenz ZMS API URL")
 	logLoc := flag.String("log-location", "/var/log/k8s-athenz-syncer.log", "log location")
 	logMode := flag.String("log-mode", "info", "logger mode")
-	roleTestDomain := flag.String("e2e-test1-domain", "test-domain", "athenz domain used for e2e test 1")
-	roleName := flag.String("e2e-test1-role", "test-role", "athenz role used for e2e test 1")
-	trustDomain := flag.String("e2e-test2-domain", "trust-domain", "athenz trust domain used for e2e test 2")
+	roleTestDomain := flag.String("e2e-test1-domain", "k8s.omega.stage.kube-test", "athenz domain used for e2e test 1")
+	roleName := flag.String("e2e-test1-role", "syncer-e2e", "athenz role used for e2e test 1")
+	trustDomain := flag.String("e2e-test2-domain", "prod-eng.omega.acceptancetest.trust-domain", "athenz trust domain used for e2e test 2")
 	trustRoleName := flag.String("e2e-test2-role", "test-trustrole", "athenz trust role used for e2e test 2")
-	namespaceDomain := flag.String("e2e-test3-domain", "test-ns-domain", "athenz domain used for e2e test 3")
+	namespaceDomain := flag.String("e2e-test3-domain", "prod-eng.omega.acceptancetest.test-domain", "athenz domain used for e2e test 3")
 	flag.Parse()
 
 	// init logger
@@ -70,20 +70,21 @@ func setup(stopCh <-chan struct{}) error {
 	}
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
+		log.Errorf("error creating config: ", err)
 		return err
 	}
 
 	// set up k8s client
 	k8sclient, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		log.Error("Failed to create k8s client")
+		log.Errorf("Failed to create k8s client: ", err)
 		return err
 	}
 
 	// set up athenzdomains client
 	athenzClient, err := athenzClientset.NewForConfig(config)
 	if err != nil {
-		log.Error("Failed to create athenz domains client")
+		log.Errorf("Failed to create athenz domains client: ", err)
 		return err
 	}
 	// set up cr informer to get athenzdomains resources
@@ -102,7 +103,7 @@ func setup(stopCh <-chan struct{}) error {
 	// set up zms client
 	zmsclient, err := setupZMSClient(*key, *cert, *zmsURL)
 	if err != nil {
-		log.Error("Failed to create zms client")
+		log.Errorf("Failed to create zms client: ", err)
 		return err
 	}
 	adminDomain := ""
@@ -127,6 +128,7 @@ func setup(stopCh <-chan struct{}) error {
 func setupZMSClient(key string, cert string, zmsURL string) (*zms.ZMSClient, error) {
 	clientCert, err := tls.LoadX509KeyPair(cert, key)
 	if err != nil {
+		log.Errorf("error creating client certs: %v", err)
 		return nil, fmt.Errorf("Unable to formulate clientCert from key and cert bytes, error: %v", err)
 	}
 	config := &tls.Config{}
@@ -146,18 +148,18 @@ func teardown() error {
 	roleName := zms.EntityName(f.RoleName)
 	err := f.ZMSClient.DeleteRole(domain, roleName, "")
 	if err != nil {
-		log.Error("Unable to delete test1 role")
+		log.Errorf("Unable to delete test1 role: %v", err)
 		return err
 	}
 	trustroleName := zms.EntityName(f.TrustRole)
 	err = f.ZMSClient.DeleteRole(domain, trustroleName, "")
 	if err != nil {
-		log.Error("Unable to delete test2 role")
+		log.Errorf("Unable to delete test2 role: %v", err)
 		return err
 	}
 	err = f.CRClient.RemoveAthenzDomain(f.TrustDomain)
 	if err != nil {
-		log.Error("Unable to remove created athenzdomains")
+		log.Errorf("Unable to remove created athenzdomains: %v", err)
 		return err
 	}
 	deletePolicy := metav1.DeletePropagationForeground
@@ -167,7 +169,7 @@ func teardown() error {
 	namespace := f.MyUtil.DomainToNamespace(f.NamespaceDomain)
 	err = f.K8sClient.CoreV1().Namespaces().Delete(namespace, deleteOptions)
 	if err != nil {
-		log.Error("Unable to delete test namespace")
+		log.Errorf("Unable to delete test namespace: %v", err)
 		return err
 	}
 	Global = nil

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/yahoo/athenz/clients/go/zms"
+	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
 	"github.com/yahoo/k8s-athenz-syncer/test/e2e/framework"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,7 +20,8 @@ func TestBasicRoleUpdate(t *testing.T) {
 	// pre-check to see if the target athenzdomains resource exists before modifying
 	_, exists, err := f.CRClient.GetCRByName(f.RoleDomain)
 	if err != nil {
-		t.Error("Pre-Check Error while finding athenzdomain resource from store")
+		log.Errorf("test 1 Pre-Check Error finding cr: %v", err)
+		t.Error("test 1 Pre-Check Error while finding athenzdomain resource from store")
 	}
 	if !exists {
 		t.Error("Pre-Check Error: Did not find target domain cr")
@@ -33,12 +35,14 @@ func TestBasicRoleUpdate(t *testing.T) {
 	}
 	err = f.ZMSClient.PutRole(domain, roleName, "", &role)
 	if err != nil {
+		log.Errorf("test 1 error adding regular role: %v", err)
 		t.Errorf("Unable to add role")
 	}
 	// checking for updates in cr
 	err = wait.PollImmediate(time.Second*30, time.Minute*3, func() (bool, error) {
 		cr, exists, err := f.CRClient.GetCRByName(f.RoleDomain)
 		if err != nil {
+			log.Errorf("test 1 error getting athenzdomains for test: %v", err)
 			t.Log("Error while finding athenzdomain resource from store")
 			return false, nil
 		}
@@ -64,6 +68,7 @@ func TestBasicRoleUpdate(t *testing.T) {
 		return true, nil
 	})
 	if err != nil {
+		log.Errorf("test 1 failed, error: %v", err)
 		t.Error("Failed to find added role")
 	}
 }
@@ -75,6 +80,7 @@ func TestTrustDomain(t *testing.T) {
 	// pre-check to see if the target domain exists and trust domain does not exist
 	_, exists, err := f.CRClient.GetCRByName(f.RoleDomain)
 	if err != nil {
+		log.Errorf("test 2 Pre-Check error finding target cr: %v", err)
 		t.Error("Pre-Check Error while finding athenzdomains resource in store")
 	}
 	if !exists {
@@ -82,6 +88,7 @@ func TestTrustDomain(t *testing.T) {
 	}
 	_, exists, err = f.CRClient.GetCRByName(f.TrustDomain)
 	if err != nil {
+		log.Errorf("test 2 Pre-Check error finding trust cr: %v", err)
 		t.Error("Pre-Check Error while finding trust domain resource from store")
 	}
 	if exists {
@@ -98,12 +105,14 @@ func TestTrustDomain(t *testing.T) {
 	}
 	err = f.ZMSClient.PutRole(domain, trustroleName, "", &trustRole)
 	if err != nil {
+		log.Errorf("test 2 unable to add trust role: %v", err)
 		t.Error("Unable to add trust role")
 	}
 	// checking for updates in cr
 	err = wait.PollImmediate(time.Second*30, time.Minute*3, func() (bool, error) {
 		cr, exists, err := f.CRClient.GetCRByName(f.RoleDomain)
 		if err != nil {
+			log.Errorf("test 2 error finding target cr in test: %v", err)
 			t.Log("Error while finding athenzdomains resource in store")
 			return false, nil
 		}
@@ -127,6 +136,7 @@ func TestTrustDomain(t *testing.T) {
 
 		cr, exists, err = f.CRClient.GetCRByName(f.TrustDomain)
 		if err != nil {
+			log.Errorf("test 2 error finding trust domain in test: %v", err)
 			t.Log("Error while finding trust domain resource from store")
 			return false, nil
 		}
@@ -137,6 +147,7 @@ func TestTrustDomain(t *testing.T) {
 		return true, nil
 	})
 	if err != nil {
+		log.Errorf("test 2 failed, error: %v", err)
 		t.Error("Did not find target trust domain resources")
 	}
 }
@@ -147,6 +158,7 @@ func TestNamespace(t *testing.T) {
 	// pre-check to see namespace domain does not exist before test
 	_, exists, err := f.CRClient.GetCRByName(f.NamespaceDomain)
 	if err != nil {
+		log.Errorf("test 3 Pre-Check error finding target cr: %v", err)
 		t.Error("Pre-Check Error while finding athenzdomains resource from store")
 	}
 	if exists {
@@ -160,12 +172,14 @@ func TestNamespace(t *testing.T) {
 		},
 	})
 	if err != nil {
+		log.Errorf("test 3 unable to create namespace: %v", err)
 		t.Error("Unable to create new namespace")
 	}
 	// checking new namespace domain cr
 	err = wait.PollImmediate(time.Second*30, time.Minute*3, func() (bool, error) {
 		_, exists, err := f.CRClient.GetCRByName(f.NamespaceDomain)
 		if err != nil {
+			log.Errorf("test 3 error finding target cr: %v", err)
 			t.Log("Error while finding athenzdomains resource from store")
 			return false, nil
 		}
@@ -176,6 +190,7 @@ func TestNamespace(t *testing.T) {
 		return true, nil
 	})
 	if err != nil {
+		log.Errorf("test 3 failed, error: %v", err)
 		t.Error("Did not find the athenzdomains resource for the added namespace")
 	}
 }
