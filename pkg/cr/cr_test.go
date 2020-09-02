@@ -16,6 +16,7 @@ limitations under the License.
 package cr
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -114,7 +115,7 @@ func TestCreateUpdateCR(t *testing.T) {
 	if err != nil {
 		t.Error("Failed to create CR successfully", err)
 	}
-	res, err := c.athenzClientset.AthenzDomains().Get(domainName, v1.GetOptions{})
+	res, err := c.athenzClientset.AthenzDomains().Get(context.TODO(), domainName, v1.GetOptions{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -158,7 +159,7 @@ func TestRemoveAthenzDomain(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	res, err := c.athenzClientset.AthenzDomains().Get(domainName, v1.GetOptions{})
+	res, err := c.athenzClientset.AthenzDomains().Get(context.TODO(), domainName, v1.GetOptions{})
 	if !apiError.IsNotFound(err) {
 		t.Error(err)
 	}

@@ -1,6 +1,7 @@
 package cr
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -56,7 +57,7 @@ func (c *CRUtil) CreateUpdateAthenzDomain(domain string, domainData *zms.SignedD
 		return nil, fmt.Errorf("Did not find key in store. Error while looking up for key: %v", err)
 	}
 	if !exist {
-		cr, err = athenzDomainClient.Create(newCR)
+		cr, err = athenzDomainClient.Create(context.TODO(), newCR, metav1.CreateOptions{})
 		if err == nil {
 			return cr, nil
 		} else if !apiError.IsAlreadyExists(err) {
@@ -85,7 +86,7 @@ func (c *CRUtil) updateCR(object *athenz_domain.AthenzDomain, newCR *athenz_doma
 	}
 	resourceVersion := object.ResourceVersion
 	newCR.ObjectMeta.ResourceVersion = resourceVersion
-	return c.athenzClientset.AthenzDomains().Update(newCR)
+	return c.athenzClientset.AthenzDomains().Update(context.TODO(), newCR, metav1.UpdateOptions{})
 }
 
 // GetCRByName - get AthenzDomain CR by domain
@@ -111,7 +112,7 @@ func (c *CRUtil) RemoveAthenzDomain(domain string) error {
 		return err
 	}
 	if exist && obj != nil {
-		err := c.athenzClientset.AthenzDomains().Delete(domain, &metav1.DeleteOptions{})
+		err := c.athenzClientset.AthenzDomains().Delete(context.TODO(), domain, metav1.DeleteOptions{})
 		if err != nil {
 			log.Error("Error occurred when deleting AthenzDomain Custom Resource in the Cluster")
 			return err
@@ -189,7 +190,7 @@ func TrustDomainIndexFunc(obj interface{}) ([]string, error) {
 
 // UpdateErrorStatus - add error status field in CR when zms call returns error
 func (c *CRUtil) UpdateErrorStatus(obj *athenz_domain.AthenzDomain) {
-	_, err := c.athenzClientset.AthenzDomains().Update(obj)
+	_, err := c.athenzClientset.AthenzDomains().Update(context.TODO(), obj, metav1.UpdateOptions{})
 	if err != nil {
 		log.Error(err)
 	}
