@@ -1,9 +1,7 @@
 language: go
-env:
-- GO111MODULE=on
 
 go:
-- 1.12.x
+- 1.14.x
 
 script:
 - go build -v -race ./...
@@ -12,5 +10,5 @@ script:
 - go test -v -race ./...
 
 branches:
-  only: 
+  only:
     - master
