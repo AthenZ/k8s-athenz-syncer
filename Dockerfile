@@ -1,4 +1,4 @@
-FROM golang:1.12.4 as builder
+FROM golang:1.14.7 as builder
 
 WORKDIR $GOPATH/src/github.com/yahoo/k8s-athenz-syncer
 
@@ -13,4 +13,4 @@ RUN apk --update add ca-certificates
 
 COPY --from=builder /go/bin/k8s-athenz-syncer /usr/bin/k8s-athenz-syncer
 
-CMD ["/usr/bin/k8s-athenz-syncer"]
+ENTRYPOINT ["/usr/bin/k8s-athenz-syncer"]

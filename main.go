@@ -17,8 +17,10 @@ package main
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/signal"
@@ -28,6 +30,9 @@ import (
 	"time"
 
 	"github.com/yahoo/k8s-athenz-syncer/pkg/controller"
+	"github.com/yahoo/k8s-athenz-syncer/pkg/cron"
+	"github.com/yahoo/k8s-athenz-syncer/pkg/crypto"
+	"github.com/yahoo/k8s-athenz-syncer/pkg/identity"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/util"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -38,17 +43,10 @@ import (
 	r "github.com/yahoo/k8s-athenz-syncer/pkg/reloader"
 )
 
-func homeDir() string {
-	if h := os.Getenv("HOME"); h != "" {
-		return h
-	}
-	return os.Getenv("USERPROFILE") // windows
-}
-
 // getClients retrieve the Kubernetes cluster client and Athenz client
 func getClients(inClusterConfig *bool) (kubernetes.Interface, *athenzClientset.Clientset, error) {
 	var kubeconfig *string
-	if home := homeDir(); home != "" {
+	if home := util.HomeDir(); home != "" {
 		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
 	} else {
 		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
@@ -79,10 +77,19 @@ func getClients(inClusterConfig *bool) (kubernetes.Interface, *athenzClientset.C
 }
 
 // createZMSClient - create client to zms to make zms calls
-func createZMSClient(reloader *r.CertReloader, zmsURL string, disableKeepAlives bool) (*zms.ZMSClient, error) {
+func createZMSClient(reloader *r.CertReloader, zmsURL, caCert string, disableKeepAlives bool) (*zms.ZMSClient, error) {
 	config := &tls.Config{}
 	config.GetClientCertificate = func(_ *tls.CertificateRequestInfo) (*tls.Certificate, error) {
 		return reloader.GetLatestCertificate(), nil
+	}
+	if caCert != "" {
+		c, err := ioutil.ReadFile(caCert)
+		if err != nil {
+			return nil, err
+		}
+		certPool := x509.NewCertPool()
+		certPool.AppendCertsFromPEM(c)
+		config.RootCAs = certPool
 	}
 	transport := &http.Transport{
 		TLSClientConfig:   config,
@@ -97,8 +104,12 @@ func main() {
 	// command line arguments for athenz initial setup
 	key := flag.String("key", "/var/run/athenz/service.key.pem", "Athenz private key file")
 	cert := flag.String("cert", "/var/run/athenz/service.cert.pem", "Athenz certificate file")
+	caCert := flag.String("cacert", "", "Athenz CA certificate file")
 	zmsURL := flag.String("zms-url", "", "Athenz ZMS API URL")
 	updateCron := flag.String("update-cron", "1m0s", "Update cron sleep time")
+	athenzContactTimeCmNs := flag.String("athenz-contact-time-cm-ns", "kube-yahoo", "Namespace of ConfigMap to record the latest time that the Update Cron contacted Athenz")
+	athenzContactTimeCmName := flag.String("athenz-contact-time-cm-name", "athenzcall-config", "Name of ConfigMap to record the latest time that the Update Cron contacted Athenz")
+	athenzContactTimeCmKey := flag.String("athenz-contact-time-cm-key", "latest_contact", "Key of ConfigMap to record the latest time that the Update Cron contacted Athenz")
 	resyncCron := flag.String("resync-cron", "1h0m0s", "Cron full resync sleep time")
 	queueDelayInterval := flag.String("queue-delay-interval", "250ms", "Delay interval time for workqueue")
 	adminDomain := flag.String("admin-domain", "", "admin domain")
@@ -106,6 +117,13 @@ func main() {
 	disableKeepAlives := flag.Bool("disable-keep-alives", true, "Disable keep alive for zms client")
 	logLoc := flag.String("log-location", "/var/log/k8s-athenz-syncer/k8s-athenz-syncer.log", "log location")
 	logMode := flag.String("log-mode", "info", "logger mode")
+	identityKeyDir := flag.String("identity-key", "/var/run/keys/identity", "directory containing private keys for service identity")
+	useNToken := flag.Bool("use-ntoken", false, "use nToken for zms authentication")
+	serviceName := flag.String("service-name", "k8s-athenz-syncer", "service name")
+	domainName := flag.String("service-domain", "", "athenz domain that contains k8s-athenz-syncer")
+	secretName := flag.String("secret-name", "k8s-athenz-syncer", "secret name that contains private key")
+	header := flag.String("auth-header", "", "Authentication header field")
+	nTokenExpireTime := flag.String("ntoken-expiry", "1h0m0s", "Custom nToken expiration duration")
 
 	// create new log
 	log.InitLogger(*logLoc, *logMode)
@@ -117,22 +135,47 @@ func main() {
 	}
 
 	stopCh := make(chan struct{})
+	var zmsClient *zms.ZMSClient
+	if *useNToken {
+		client := zms.NewClient(*zmsURL, nil)
+		zmsClient = &client
 
-	// setup key cert reloader
-	certReloader, err := r.NewCertReloader(r.ReloadConfig{
-		KeyFile:  *key,
-		CertFile: *cert,
-	}, stopCh)
-	if err != nil {
-		log.Panicf("Error occurred when creating new reloader. Error: %v", err)
-	}
+		// custom nToken expiration duration
+		nTokenPeriod, err := time.ParseDuration(*nTokenExpireTime)
+		if err != nil {
+			log.Panicf("NToken expiry duration input is invalid. Error: %v", err)
+		}
 
-	// zmsClient setup for API call
-	zmsClient, err := createZMSClient(certReloader, *zmsURL, *disableKeepAlives)
-	if err != nil {
-		log.Panicf("Error occurred when creating zms client. Error: %v", err)
+		privateKeySource := crypto.NewPrivateKeySource(*identityKeyDir, *secretName)
+		// create tokenProvider
+		_, err = identity.NewTokenProvider(identity.Config{
+			Client:             zmsClient,
+			Header:             *header,
+			Domain:             *domainName,
+			Service:            *serviceName,
+			PrivateKeyProvider: privateKeySource.SigningKey,
+			TokenExpiry:        nTokenPeriod,
+		}, stopCh)
+		if err != nil {
+			log.Panicf("Could not create new Token Provider: %v", err)
+		}
+		log.Info("Sucessfully created ZMS Client with nToken authn")
+	} else {
+		// setup key cert reloader
+		certReloader, err := r.NewCertReloader(r.ReloadConfig{
+			KeyFile:  *key,
+			CertFile: *cert,
+		}, stopCh)
+		if err != nil {
+			log.Panicf("Error occurred when creating new reloader. Error: %v", err)
+		}
+		// use key and cert to create zmsClient for API calls
+		zmsClient, err = createZMSClient(certReloader, *zmsURL, *caCert, *disableKeepAlives)
+		if err != nil {
+			log.Panicf("Error occurred when creating zms client. Error: %v", err)
+		}
+		log.Info("Sucessfully created ZMS Client with certs authn")
 	}
-	log.Info("Sucessfully created ZMS Client")
 
 	// process system-namespaces input string and create new Util object
 	systemNSList := strings.Split(*systemNamespaces, ",")
@@ -160,7 +203,13 @@ func main() {
 		log.Panicf("Queue delay input is invalid. Error: %v", err)
 	}
 
-	controller := controller.NewController(k8sClient, versiondClient, zmsClient, updatePeriod, resyncPeriod, delayInterval, util)
+	cm := &cron.AthenzContactTimeConfigMap{
+		Namespace: *athenzContactTimeCmNs,
+		Name:      *athenzContactTimeCmName,
+		Key:       *athenzContactTimeCmKey,
+	}
+
+	controller := controller.NewController(k8sClient, versiondClient, zmsClient, updatePeriod, resyncPeriod, delayInterval, util, cm)
 
 	// use a channel to synchronize the finalization for a graceful shutdown
 	defer close(stopCh)

@@ -31,6 +31,7 @@ import (
 	"github.com/yahoo/athenz/clients/go/zms"
 	athenz_domain "github.com/yahoo/k8s-athenz-syncer/pkg/apis/athenz/v1"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/client/clientset/versioned/fake"
+	"github.com/yahoo/k8s-athenz-syncer/pkg/cron"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/util"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 )
@@ -45,11 +46,18 @@ func newController() *Controller {
 	clientset := k8sfake.NewSimpleClientset()
 	zmsclient := zms.NewClient("https://zms.athenz.com", &http.Transport{})
 	util := util.NewUtil("admin.domain", []string{"kube-system", "kube-public", "kube-test"})
-	newCtl := NewController(clientset, athenzclientset, &zmsclient, time.Minute, time.Hour, 250*time.Millisecond, util)
+	cm := &cron.AthenzContactTimeConfigMap{
+		Namespace: "kube-yahoo",
+		Name:      "athenzcall-config",
+		Key:       "latest_contact",
+	}
+	newCtl := NewController(clientset, athenzclientset, &zmsclient, time.Minute, time.Hour, 250*time.Millisecond, util, cm)
 	return newCtl
 }
 
 func getFakeDomain() zms.SignedDomain {
+	t := true
+	f := false
 	allow := zms.ALLOW
 	timestamp, err := rdl.TimestampParse("2019-06-21T19:28:09.305Z")
 	if err != nil {
@@ -58,8 +66,10 @@ func getFakeDomain() zms.SignedDomain {
 
 	return zms.SignedDomain{
 		Domain: &zms.DomainData{
-			Modified: timestamp,
-			Name:     zms.DomainName(domainName),
+			Enabled:      &t,
+			AuditEnabled: &f,
+			Modified:     timestamp,
+			Name:         zms.DomainName(domainName),
 			Policies: &zms.SignedPolicies{
 				Contents: &zms.DomainPolicies{
 					Domain: zms.DomainName(domainName),
@@ -89,6 +99,8 @@ func getFakeDomain() zms.SignedDomain {
 					RoleMembers: []*zms.RoleMember{
 						{
 							MemberName: zms.MemberName(username),
+							Active:     &f,
+							Approved:   &f,
 						},
 					},
 				},

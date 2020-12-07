@@ -59,7 +59,7 @@ type Controller struct {
 }
 
 // NewController returns a Controller with logger, clientset, queue and informer generated
-func NewController(k8sClient kubernetes.Interface, versiondClient athenzClientset.Interface, zmsClient *zms.ZMSClient, updateCron time.Duration, resyncCron time.Duration, delayInterval time.Duration, util *util.Util) *Controller {
+func NewController(k8sClient kubernetes.Interface, versiondClient athenzClientset.Interface, zmsClient *zms.ZMSClient, updateCron time.Duration, resyncCron time.Duration, delayInterval time.Duration, util *util.Util, cm *cron.AthenzContactTimeConfigMap) *Controller {
 	nsListWatcher := cache.NewListWatchFromClient(k8sClient.CoreV1().RESTClient(), "namespaces", corev1.NamespaceAll, fields.Everything())
 	nsIndexInformer := cache.NewSharedIndexInformer(nsListWatcher, &corev1.Namespace{}, time.Hour, cache.Indexers{})
 	rateLimiter := ratelimiter.NewRateLimiter(delayInterval)
@@ -92,7 +92,7 @@ func NewController(k8sClient kubernetes.Interface, versiondClient athenzClientse
 		trustDomainIndexKey: cr.TrustDomainIndexFunc,
 	})
 	c.cr = cr.NewCRUtil(versiondClient, crIndexInformer)
-	c.cron = cron.NewCron(k8sClient, updateCron, resyncCron, "", zmsClient, nsIndexInformer, queue, util, c.cr)
+	c.cron = cron.NewCron(k8sClient, updateCron, resyncCron, "", zmsClient, nsIndexInformer, queue, util, c.cr, cm)
 	return c
 }
 
