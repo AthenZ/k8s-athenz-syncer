@@ -37,14 +37,14 @@ type AthenzDomainsGetter interface {
 
 // AthenzDomainInterface has methods to work with AthenzDomain resources.
 type AthenzDomainInterface interface {
-	Create(*v1.AthenzDomain) (*v1.AthenzDomain, error)
-	Update(*v1.AthenzDomain) (*v1.AthenzDomain, error)
-	Delete(name string, options *metav1.DeleteOptions) error
-	DeleteCollection(options *metav1.DeleteOptions, listOptions metav1.ListOptions) error
-	Get(name string, options metav1.GetOptions) (*v1.AthenzDomain, error)
+	Create(athenzDomain *v1.AthenzDomain, opts metav1.CreateOptions) (*v1.AthenzDomain, error)
+	Update(athenzDomain *v1.AthenzDomain, opts metav1.UpdateOptions) (*v1.AthenzDomain, error)
+	Delete(name string, opts metav1.DeleteOptions) error
+	DeleteCollection(opts metav1.DeleteOptions, listOpts metav1.ListOptions) error
+	Get(name string, opts metav1.GetOptions) (*v1.AthenzDomain, error)
 	List(opts metav1.ListOptions) (*v1.AthenzDomainList, error)
 	Watch(opts metav1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.AthenzDomain, err error)
+	Patch(name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.AthenzDomain, err error)
 	AthenzDomainExpansion
 }
 
@@ -103,10 +103,11 @@ func (c *athenzDomains) Watch(opts metav1.ListOptions) (watch.Interface, error) 
 }
 
 // Create takes the representation of a athenzDomain and creates it.  Returns the server's representation of the athenzDomain, and an error, if there is any.
-func (c *athenzDomains) Create(athenzDomain *v1.AthenzDomain) (result *v1.AthenzDomain, err error) {
+func (c *athenzDomains) Create(athenzDomain *v1.AthenzDomain, opts metav1.CreateOptions) (result *v1.AthenzDomain, err error) {
 	result = &v1.AthenzDomain{}
 	err = c.client.Post().
 		Resource("athenzdomains").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(athenzDomain).
 		Do().
 		Into(result)
@@ -114,11 +115,12 @@ func (c *athenzDomains) Create(athenzDomain *v1.AthenzDomain) (result *v1.Athenz
 }
 
 // Update takes the representation of a athenzDomain and updates it. Returns the server's representation of the athenzDomain, and an error, if there is any.
-func (c *athenzDomains) Update(athenzDomain *v1.AthenzDomain) (result *v1.AthenzDomain, err error) {
+func (c *athenzDomains) Update(athenzDomain *v1.AthenzDomain, opts metav1.UpdateOptions) (result *v1.AthenzDomain, err error) {
 	result = &v1.AthenzDomain{}
 	err = c.client.Put().
 		Resource("athenzdomains").
 		Name(athenzDomain.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(athenzDomain).
 		Do().
 		Into(result)
@@ -126,37 +128,38 @@ func (c *athenzDomains) Update(athenzDomain *v1.AthenzDomain) (result *v1.Athenz
 }
 
 // Delete takes name of the athenzDomain and deletes it. Returns an error if one occurs.
-func (c *athenzDomains) Delete(name string, options *metav1.DeleteOptions) error {
+func (c *athenzDomains) Delete(name string, opts metav1.DeleteOptions) error {
 	return c.client.Delete().
 		Resource("athenzdomains").
 		Name(name).
-		Body(options).
+		Body(&opts).
 		Do().
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *athenzDomains) DeleteCollection(options *metav1.DeleteOptions, listOptions metav1.ListOptions) error {
+func (c *athenzDomains) DeleteCollection(opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Resource("athenzdomains").
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
+		Body(&opts).
 		Do().
 		Error()
 }
 
 // Patch applies the patch and returns the patched athenzDomain.
-func (c *athenzDomains) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.AthenzDomain, err error) {
+func (c *athenzDomains) Patch(name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.AthenzDomain, err error) {
 	result = &v1.AthenzDomain{}
 	err = c.client.Patch(pt).
 		Resource("athenzdomains").
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
 		Do().
 		Into(result)
