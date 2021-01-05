@@ -19,8 +19,6 @@ limitations under the License.
 package fake
 
 import (
-	"context"
-
 	athenzv1 "github.com/yahoo/k8s-athenz-syncer/pkg/apis/athenz/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -40,7 +38,7 @@ var athenzdomainsResource = schema.GroupVersionResource{Group: "athenz", Version
 var athenzdomainsKind = schema.GroupVersionKind{Group: "athenz", Version: "v1", Kind: "AthenzDomain"}
 
 // Get takes name of the athenzDomain, and returns the corresponding athenzDomain object, and an error if there is any.
-func (c *FakeAthenzDomains) Get(ctx context.Context, name string, options v1.GetOptions) (result *athenzv1.AthenzDomain, err error) {
+func (c *FakeAthenzDomains) Get(name string, options v1.GetOptions) (result *athenzv1.AthenzDomain, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootGetAction(athenzdomainsResource, name), &athenzv1.AthenzDomain{})
 	if obj == nil {
@@ -50,7 +48,7 @@ func (c *FakeAthenzDomains) Get(ctx context.Context, name string, options v1.Get
 }
 
 // List takes label and field selectors, and returns the list of AthenzDomains that match those selectors.
-func (c *FakeAthenzDomains) List(ctx context.Context, opts v1.ListOptions) (result *athenzv1.AthenzDomainList, err error) {
+func (c *FakeAthenzDomains) List(opts v1.ListOptions) (result *athenzv1.AthenzDomainList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootListAction(athenzdomainsResource, athenzdomainsKind, opts), &athenzv1.AthenzDomainList{})
 	if obj == nil {
@@ -71,13 +69,13 @@ func (c *FakeAthenzDomains) List(ctx context.Context, opts v1.ListOptions) (resu
 }
 
 // Watch returns a watch.Interface that watches the requested athenzDomains.
-func (c *FakeAthenzDomains) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeAthenzDomains) Watch(opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewRootWatchAction(athenzdomainsResource, opts))
 }
 
 // Create takes the representation of a athenzDomain and creates it.  Returns the server's representation of the athenzDomain, and an error, if there is any.
-func (c *FakeAthenzDomains) Create(ctx context.Context, athenzDomain *athenzv1.AthenzDomain, opts v1.CreateOptions) (result *athenzv1.AthenzDomain, err error) {
+func (c *FakeAthenzDomains) Create(athenzDomain *athenzv1.AthenzDomain, opts v1.CreateOptions) (result *athenzv1.AthenzDomain, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootCreateAction(athenzdomainsResource, athenzDomain), &athenzv1.AthenzDomain{})
 	if obj == nil {
@@ -87,7 +85,7 @@ func (c *FakeAthenzDomains) Create(ctx context.Context, athenzDomain *athenzv1.A
 }
 
 // Update takes the representation of a athenzDomain and updates it. Returns the server's representation of the athenzDomain, and an error, if there is any.
-func (c *FakeAthenzDomains) Update(ctx context.Context, athenzDomain *athenzv1.AthenzDomain, opts v1.UpdateOptions) (result *athenzv1.AthenzDomain, err error) {
+func (c *FakeAthenzDomains) Update(athenzDomain *athenzv1.AthenzDomain, opts v1.UpdateOptions) (result *athenzv1.AthenzDomain, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootUpdateAction(athenzdomainsResource, athenzDomain), &athenzv1.AthenzDomain{})
 	if obj == nil {
@@ -97,14 +95,14 @@ func (c *FakeAthenzDomains) Update(ctx context.Context, athenzDomain *athenzv1.A
 }
 
 // Delete takes name of the athenzDomain and deletes it. Returns an error if one occurs.
-func (c *FakeAthenzDomains) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
+func (c *FakeAthenzDomains) Delete(name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewRootDeleteAction(athenzdomainsResource, name), &athenzv1.AthenzDomain{})
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeAthenzDomains) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+func (c *FakeAthenzDomains) DeleteCollection(opts v1.DeleteOptions, listOpts v1.ListOptions) error {
 	action := testing.NewRootDeleteCollectionAction(athenzdomainsResource, listOpts)
 
 	_, err := c.Fake.Invokes(action, &athenzv1.AthenzDomainList{})
@@ -112,7 +110,7 @@ func (c *FakeAthenzDomains) DeleteCollection(ctx context.Context, opts v1.Delete
 }
 
 // Patch applies the patch and returns the patched athenzDomain.
-func (c *FakeAthenzDomains) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *athenzv1.AthenzDomain, err error) {
+func (c *FakeAthenzDomains) Patch(name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *athenzv1.AthenzDomain, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootPatchSubresourceAction(athenzdomainsResource, name, pt, data, subresources...), &athenzv1.AthenzDomain{})
 	if obj == nil {
