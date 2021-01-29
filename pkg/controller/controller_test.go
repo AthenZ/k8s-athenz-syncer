@@ -112,7 +112,7 @@ func getFakeDomain() zms.SignedDomain {
 			},
 			Services: []*zms.ServiceIdentity{},
 			Entities: []*zms.Entity{},
-			Groups:   []*zms.Group {},
+			Groups:   []*zms.Group{},
 		},
 		KeyId:     "colo-env-1.1",
 		Signature: "signature",
