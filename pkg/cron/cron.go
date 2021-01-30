@@ -94,7 +94,7 @@ func notifyOnErr(err error, backoffDelay time.Duration) {
 
 // RequestCall - ZMS call for update crons
 func (c *Cron) requestCall() error {
-	master := true
+	master := false
 	domains, etag, err := c.zmsClient.GetSignedDomains("", "true", "", &master, c.etag)
 	if err != nil {
 		return fmt.Errorf("Error getting latest updated domains from ZMS API. Error: %v", err)
