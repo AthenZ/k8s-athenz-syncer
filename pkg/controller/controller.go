@@ -294,7 +294,8 @@ func (c *Controller) sync(domain string) error {
 // zmsGetSignedDomains - make http request to zms API to fetch domain data
 func (c *Controller) zmsGetSignedDomains(domain string) (*zms.SignedDomains, bool, error) {
 	d := zms.DomainName(domain)
-	signedDomain, _, err := c.zmsClient.GetSignedDomains(d, "", "", "")
+	master := false
+	signedDomain, _, err := c.zmsClient.GetSignedDomains(d, "", "", &master, "")
 	if err != nil {
 		return nil, false, err
 	}

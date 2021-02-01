@@ -17,13 +17,12 @@ require (
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/mash/go-accesslog v1.2.0
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.4.2
-	github.com/stretchr/testify v1.4.0
+	github.com/stretchr/testify v1.5.1
 	github.com/tevino/abool v0.0.0-20170917061928-9b9efcf221b5
-	github.com/yahoo/athenz v1.8.40
+	github.com/yahoo/athenz v1.9.30
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45 // indirect
-	golang.org/x/sys v0.0.0-20191010194322-b09406accb47 // indirect
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	k8s.io/api v0.15.10
