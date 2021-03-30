@@ -59,7 +59,8 @@ func (in *AthenzDomainSpec) DeepCopy() *AthenzDomainSpec {
 
 // AthenzDomainStatus stores status information about the current resource
 type AthenzDomainStatus struct {
-	Message string `json:"message,omitempty"`
+	Message   string         `json:"message,omitempty"`
+	JWSDomain *zms.JWSDomain `json:"jwsdomain,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
