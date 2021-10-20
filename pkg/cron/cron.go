@@ -16,6 +16,7 @@ limitations under the License.
 package cron
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -203,9 +204,9 @@ func (c *Cron) UpdateAthenzContactTime(etag string) {
 		},
 		Data: map[string]string{c.contactTimeCm.Key: etag},
 	}
-	configMap, err := c.k8sClient.CoreV1().ConfigMaps(c.contactTimeCm.Namespace).Get(c.contactTimeCm.Name, metav1.GetOptions{})
+	configMap, err := c.k8sClient.CoreV1().ConfigMaps(c.contactTimeCm.Namespace).Get(context.TODO(), c.contactTimeCm.Name, metav1.GetOptions{})
 	if err != nil && apiError.IsNotFound(err) {
-		configMap, err = c.k8sClient.CoreV1().ConfigMaps(c.contactTimeCm.Namespace).Create(configmap)
+		configMap, err = c.k8sClient.CoreV1().ConfigMaps(c.contactTimeCm.Namespace).Create(context.TODO(), configmap, metav1.CreateOptions{})
 		if err != nil {
 			log.Errorf("Error occurred when creating new config map. Error: %v", err)
 		}
@@ -213,7 +214,7 @@ func (c *Cron) UpdateAthenzContactTime(etag string) {
 		log.Errorf("Error occurred during GET config map. Error: %v", err)
 		return
 	} else if configMap != nil {
-		_, err := c.k8sClient.CoreV1().ConfigMaps(c.contactTimeCm.Namespace).Update(configmap)
+		_, err := c.k8sClient.CoreV1().ConfigMaps(c.contactTimeCm.Namespace).Update(context.TODO(), configmap, metav1.UpdateOptions{})
 		if err != nil {
 			log.Errorf("Unable to update latest timestamp in Config Map. Error: %v", err)
 		}

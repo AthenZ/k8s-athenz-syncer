@@ -19,6 +19,7 @@ limitations under the License.
 package v1
 
 import (
+	"context"
 	time "time"
 
 	athenzv1 "github.com/yahoo/k8s-athenz-syncer/pkg/apis/athenz/v1"
@@ -60,13 +61,13 @@ func NewFilteredAthenzDomainInformer(client versioned.Interface, resyncPeriod ti
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.AthenzV1().AthenzDomains().List(options)
+				return client.AthenzV1().AthenzDomains().List(context.TODO(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.AthenzV1().AthenzDomains().Watch(options)
+				return client.AthenzV1().AthenzDomains().Watch(context.TODO(), options)
 			},
 		},
 		&athenzv1.AthenzDomain{},

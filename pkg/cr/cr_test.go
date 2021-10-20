@@ -16,6 +16,7 @@ limitations under the License.
 package cr
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -110,11 +111,11 @@ func TestCreateUpdateCR(t *testing.T) {
 	c := newCRResource()
 
 	// test Create CR functionality
-	cr, err := c.CreateUpdateAthenzDomain(domainName, &signedDomain)
+	cr, err := c.CreateUpdateAthenzDomain(context.TODO(), domainName, &signedDomain)
 	if err != nil {
 		t.Error("Failed to create CR successfully", err)
 	}
-	res, err := c.athenzClientset.AthenzDomains().Get(domainName, v1.GetOptions{})
+	res, err := c.athenzClientset.AthenzDomains().Get(context.TODO(), domainName, v1.GetOptions{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -129,7 +130,7 @@ func TestCreateUpdateCR(t *testing.T) {
 
 	// test Update existing CR functionality
 	signedDomain.KeyId = "300"
-	updateRes, err := c.CreateUpdateAthenzDomain(domainName, &signedDomain)
+	updateRes, err := c.CreateUpdateAthenzDomain(context.TODO(), domainName, &signedDomain)
 	if err != nil {
 		t.Error("Failed to update CR successfully", err)
 	}
@@ -145,7 +146,7 @@ func TestRemoveAthenzDomain(t *testing.T) {
 	c := newCRResource()
 
 	// create cr
-	cr, err := c.CreateUpdateAthenzDomain(domainName, &signedDomain)
+	cr, err := c.CreateUpdateAthenzDomain(context.TODO(), domainName, &signedDomain)
 	if err != nil {
 		t.Error("Failed to create CR successfully", err)
 	}
@@ -154,11 +155,11 @@ func TestRemoveAthenzDomain(t *testing.T) {
 	}
 	c.CrIndexInformer.GetStore().Add(cr)
 
-	err = c.RemoveAthenzDomain(domainName)
+	err = c.RemoveAthenzDomain(context.TODO(), domainName)
 	if err != nil {
 		t.Error(err)
 	}
-	res, err := c.athenzClientset.AthenzDomains().Get(domainName, v1.GetOptions{})
+	res, err := c.athenzClientset.AthenzDomains().Get(context.TODO(), domainName, v1.GetOptions{})
 	if !apiError.IsNotFound(err) {
 		t.Error(err)
 	}
@@ -185,7 +186,7 @@ func TestGetLatestTimestamp(t *testing.T) {
 		signedDomain := zms.SignedDomain{
 			Domain: &domain,
 		}
-		cr, err := c.CreateUpdateAthenzDomain(domainName, &signedDomain)
+		cr, err := c.CreateUpdateAthenzDomain(context.TODO(), domainName, &signedDomain)
 		if err != nil {
 			t.Errorf("Error occurred during create/update of CR. Error: %v", err)
 		}

@@ -1,6 +1,7 @@
 package cr
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -34,7 +35,7 @@ func NewCRUtil(athenzClientset athenzClientset.Interface, crIndexInformer cache.
 }
 
 // CreateUpdateAthenzDomain - create AthenzDomain Custom Resource with data from Athenz
-func (c *CRUtil) CreateUpdateAthenzDomain(domain string, domainData *zms.SignedDomain) (cr *athenz_domain.AthenzDomain, err error) {
+func (c *CRUtil) CreateUpdateAthenzDomain(ctx context.Context, domain string, domainData *zms.SignedDomain) (cr *athenz_domain.AthenzDomain, err error) {
 	if domainData == nil {
 		return nil, errors.New("Domain data from ZMS API call is nil")
 	}
@@ -56,18 +57,18 @@ func (c *CRUtil) CreateUpdateAthenzDomain(domain string, domainData *zms.SignedD
 		return nil, fmt.Errorf("Did not find key in store. Error while looking up for key: %v", err)
 	}
 	if !exist {
-		cr, err = athenzDomainClient.Create(newCR, metav1.CreateOptions{})
+		cr, err = athenzDomainClient.Create(ctx, newCR, metav1.CreateOptions{})
 		if err == nil {
 			return cr, nil
 		} else if !apiError.IsAlreadyExists(err) {
 			return nil, fmt.Errorf("Failed to create new AthenzDomain CR: %s. Error: %v", domain, err)
 		}
 	}
-	return c.updateCR(obj, newCR)
+	return c.updateCR(ctx, obj, newCR)
 }
 
 // updateCR - perform an update operation on existing AthenzDomain CR
-func (c *CRUtil) updateCR(object *athenz_domain.AthenzDomain, newCR *athenz_domain.AthenzDomain) (*athenz_domain.AthenzDomain, error) {
+func (c *CRUtil) updateCR(ctx context.Context, object *athenz_domain.AthenzDomain, newCR *athenz_domain.AthenzDomain) (*athenz_domain.AthenzDomain, error) {
 	if object == nil || newCR == nil {
 		return nil, errors.New("one of the domain objects to compare is empty")
 	}
@@ -85,7 +86,7 @@ func (c *CRUtil) updateCR(object *athenz_domain.AthenzDomain, newCR *athenz_doma
 	}
 	resourceVersion := object.ResourceVersion
 	newCR.ObjectMeta.ResourceVersion = resourceVersion
-	return c.athenzClientset.AthenzDomains().Update(newCR, metav1.UpdateOptions{})
+	return c.athenzClientset.AthenzDomains().Update(ctx, newCR, metav1.UpdateOptions{})
 }
 
 // GetCRByName - get AthenzDomain CR by domain
@@ -104,14 +105,14 @@ func (c *CRUtil) GetCRByName(domain string) (*athenz_domain.AthenzDomain, bool, 
 }
 
 // RemoveAthenzDomain - delete AthenzDomain CR from Cluster
-func (c *CRUtil) RemoveAthenzDomain(domain string) error {
+func (c *CRUtil) RemoveAthenzDomain(ctx context.Context, domain string) error {
 	obj, exist, err := c.GetCRByName(domain)
 	if err != nil {
 		log.Infof("Error occurred in getCRByName function. Error: %v", err)
 		return err
 	}
 	if exist && obj != nil {
-		err := c.athenzClientset.AthenzDomains().Delete(domain, metav1.DeleteOptions{})
+		err := c.athenzClientset.AthenzDomains().Delete(ctx, domain, metav1.DeleteOptions{})
 		if err != nil {
 			log.Error("Error occurred when deleting AthenzDomain Custom Resource in the Cluster")
 			return err
@@ -188,8 +189,8 @@ func TrustDomainIndexFunc(obj interface{}) ([]string, error) {
 }
 
 // UpdateErrorStatus - add error status field in CR when zms call returns error
-func (c *CRUtil) UpdateErrorStatus(obj *athenz_domain.AthenzDomain) {
-	_, err := c.athenzClientset.AthenzDomains().Update(obj, metav1.UpdateOptions{})
+func (c *CRUtil) UpdateErrorStatus(ctx context.Context, obj *athenz_domain.AthenzDomain) {
+	_, err := c.athenzClientset.AthenzDomains().Update(ctx, obj, metav1.UpdateOptions{})
 	if err != nil {
 		log.Error(err)
 	}
