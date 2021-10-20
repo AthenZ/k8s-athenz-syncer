@@ -1,6 +1,7 @@
 dist: bionic
 install:
-- sudo update-ca-certificates
+- sudo apt-get update
+- sudo apt-get install --reinstall ca-certificates
 
 language: go
 env:
