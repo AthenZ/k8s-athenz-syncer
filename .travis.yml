@@ -1,4 +1,7 @@
 dist: bionic
+install:
+- sudo update-ca-certificates
+
 language: go
 env:
 - GO111MODULE=on
