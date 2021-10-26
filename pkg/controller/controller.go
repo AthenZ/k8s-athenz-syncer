@@ -16,6 +16,7 @@ limitations under the License.
 package controller
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -229,7 +230,7 @@ func (c *Controller) sync(domain string) error {
 	valid := c.cron.ValidateDomain(domain)
 	if !valid {
 		log.Errorf("Domain %s is an invalid domain (not part of namespace, admin domain, system domain or trust domain)", domain)
-		return c.cr.RemoveAthenzDomain(domain)
+		return c.cr.RemoveAthenzDomain(context.TODO(), domain)
 	}
 	result, exist, err := c.zmsGetSignedDomains(domain)
 	if err != nil {
@@ -240,7 +241,7 @@ func (c *Controller) sync(domain string) error {
 		}
 		// if return 404 error, remove AthenzDomains CR
 		if rdl.Code == 404 {
-			return c.cr.RemoveAthenzDomain(domain)
+			return c.cr.RemoveAthenzDomain(context.TODO(), domain)
 		}
 		obj, exists, err := c.cr.GetCRByName(domain)
 		if err != nil {
@@ -248,18 +249,18 @@ func (c *Controller) sync(domain string) error {
 		}
 		if exists {
 			obj.Status.Message = err.Error()
-			c.cr.UpdateErrorStatus(obj)
+			c.cr.UpdateErrorStatus(context.TODO(), obj)
 		}
 		return err
 	}
 	if !exist {
 		log.Errorf("Did not find DomainName: %s in ZMS.", domain)
-		return c.cr.RemoveAthenzDomain(domain)
+		return c.cr.RemoveAthenzDomain(context.TODO(), domain)
 	}
 	zmsDomainName := zms.DomainName(domain)
 	for _, domainData := range result.Domains {
 		if domainData.Domain.Name == zmsDomainName {
-			_, err := c.cr.CreateUpdateAthenzDomain(domain, domainData)
+			_, err := c.cr.CreateUpdateAthenzDomain(context.TODO(), domain, domainData)
 			if err != nil {
 				return fmt.Errorf("Error occurred when creating AthenzDomain custom resources. Error: %v", err)
 			}

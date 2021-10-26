@@ -1,9 +1,14 @@
+dist: bionic
+install:
+- sudo apt-get update
+- sudo apt-get install --reinstall ca-certificates
+
 language: go
 env:
 - GO111MODULE=on
 
 go:
-- 1.12.x
+- 1.15.x
 
 script:
 - go build -v -race ./...
