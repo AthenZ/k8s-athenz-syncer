@@ -1,8 +1,10 @@
+//go:build e2e
 // +build e2e
 
 package e2e
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -166,11 +168,11 @@ func TestNamespace(t *testing.T) {
 	}
 	// adding namespace to cluster
 	namespace := f.MyUtil.DomainToNamespace(f.NamespaceDomain)
-	_, err = f.K8sClient.CoreV1().Namespaces().Create(&v1.Namespace{
+	_, err = f.K8sClient.CoreV1().Namespaces().Create(context.TODO(), &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: namespace,
 		},
-	})
+	}, metav1.CreateOptions{})
 	if err != nil {
 		log.Errorf("test 3 unable to create namespace: %v", err)
 		t.Error("Unable to create new namespace")

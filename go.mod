@@ -15,6 +15,7 @@ require (
 	github.com/stretchr/testify v1.5.1
 	github.com/tevino/abool v0.0.0-20170917061928-9b9efcf221b5
 	github.com/yahoo/athenz v1.9.30
+	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	k8s.io/api v0.19.15
 	k8s.io/apimachinery v0.19.15
