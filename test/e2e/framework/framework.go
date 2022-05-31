@@ -1,8 +1,10 @@
+//go:build e2e
 // +build e2e
 
 package framework
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
 	"fmt"
@@ -157,7 +159,7 @@ func teardown() error {
 		log.Errorf("Unable to delete test2 role: %v", err)
 		return err
 	}
-	err = f.CRClient.RemoveAthenzDomain(f.TrustDomain)
+	err = f.CRClient.RemoveAthenzDomain(context.TODO(), f.TrustDomain)
 	if err != nil {
 		log.Errorf("Unable to remove created athenzdomains: %v", err)
 		return err
@@ -167,7 +169,7 @@ func teardown() error {
 		PropagationPolicy: &deletePolicy,
 	}
 	namespace := f.MyUtil.DomainToNamespace(f.NamespaceDomain)
-	err = f.K8sClient.CoreV1().Namespaces().Delete(namespace, deleteOptions)
+	err = f.K8sClient.CoreV1().Namespaces().Delete(context.TODO(), namespace, *deleteOptions)
 	if err != nil {
 		log.Errorf("Unable to delete test namespace: %v", err)
 		return err
