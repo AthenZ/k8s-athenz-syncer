@@ -105,11 +105,21 @@ func TestTrustDomain(t *testing.T) {
 		Name:  trustroleResource,
 		Trust: trustdomain,
 	}
-	err = f.ZMSClient.PutRole(domain, trustroleName, "", &trustRole)
+
+	err = wait.PollImmediate(time.Second*5, time.Minute*2, func() (done bool, err error) {
+		err = f.ZMSClient.PutRole(domain, trustroleName, "", &trustRole)
+		if err != nil {
+			log.Errorf("test 2 unable to add trust role: %v", err)
+			t.Log("Unable to add trust role")
+			return false, nil
+		}
+		return true, nil
+	})
 	if err != nil {
-		log.Errorf("test 2 unable to add trust role: %v", err)
+		log.Errorf("test 2 failed, error: %v", err)
 		t.Error("Unable to add trust role")
 	}
+
 	// checking for updates in cr
 	err = wait.PollImmediate(time.Second*30, time.Minute*3, func() (bool, error) {
 		cr, exists, err := f.CRClient.GetCRByName(f.RoleDomain)

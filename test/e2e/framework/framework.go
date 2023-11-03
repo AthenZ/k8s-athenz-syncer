@@ -72,21 +72,21 @@ func setup(stopCh <-chan struct{}) error {
 	}
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
-		log.Errorf("error creating config: ", err)
+		log.Error("error creating config: ", err)
 		return err
 	}
 
 	// set up k8s client
 	k8sclient, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		log.Errorf("Failed to create k8s client: ", err)
+		log.Error("Failed to create k8s client: ", err)
 		return err
 	}
 
 	// set up athenzdomains client
 	athenzClient, err := athenzClientset.NewForConfig(config)
 	if err != nil {
-		log.Errorf("Failed to create athenz domains client: ", err)
+		log.Error("Failed to create athenz domains client: ", err)
 		return err
 	}
 	// set up cr informer to get athenzdomains resources
@@ -105,7 +105,7 @@ func setup(stopCh <-chan struct{}) error {
 	// set up zms client
 	zmsclient, err := setupZMSClient(*key, *cert, *zmsURL)
 	if err != nil {
-		log.Errorf("Failed to create zms client: ", err)
+		log.Error("Failed to create zms client: ", err)
 		return err
 	}
 	adminDomain := ""
