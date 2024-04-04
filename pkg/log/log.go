@@ -40,8 +40,8 @@ func newLogger(logFile, level string) *logrus.Logger {
 
 	logLevel, err := logrus.ParseLevel(level)
 	if err != nil {
-		logrus.Warnln("Could not parse log level, defaulting to info. Error:", err.Error())
-		logLevel = logrus.InfoLevel
+		logrus.Warnln("Could not parse log level, defaulting to error. Error:", err.Error())
+		logLevel = logrus.ErrorLevel
 	}
 
 	formatter := &logrus.TextFormatter{
