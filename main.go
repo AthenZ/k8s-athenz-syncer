@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -41,6 +41,7 @@ import (
 	athenzClientset "github.com/yahoo/k8s-athenz-syncer/pkg/client/clientset/versioned"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
 	r "github.com/yahoo/k8s-athenz-syncer/pkg/reloader"
+	"k8s.io/klog/v2"
 )
 
 // getClients retrieve the Kubernetes cluster client and Athenz client
@@ -125,6 +126,10 @@ func main() {
 	header := flag.String("auth-header", "", "Authentication header field")
 	nTokenExpireTime := flag.String("ntoken-expiry", "1h0m0s", "Custom nToken expiration duration")
 
+	klog.InitFlags(nil)
+	flag.Set("logtostderr", "false")
+	flag.Set("logtostdout", "false")
+	flag.Parse()
 	// create new log
 	log.InitLogger(*logLoc, *logMode)
 	// get the Kubernetes and Athenz client for connectivity
