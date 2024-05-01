@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cenkalti/backoff"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/yahoo/athenz/clients/go/zms"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/cr"
 	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
