@@ -1,6 +1,6 @@
 FROM golang:1.14.7 as builder
 
-WORKDIR $GOPATH/src/github.com/yahoo/k8s-athenz-syncer
+WORKDIR $GOPATH/src/github.com/AthenZ/k8s-athenz-syncer
 
 COPY . .
 

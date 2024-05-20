@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,12 +22,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/AthenZ/athenz/clients/go/zms"
+	athenz_domain "github.com/AthenZ/k8s-athenz-syncer/pkg/apis/athenz/v1"
+	"github.com/AthenZ/k8s-athenz-syncer/pkg/client/clientset/versioned/fake"
+	athenzInformer "github.com/AthenZ/k8s-athenz-syncer/pkg/client/informers/externalversions/athenz/v1"
+	"github.com/AthenZ/k8s-athenz-syncer/pkg/log"
 	"github.com/ardielle/ardielle-go/rdl"
-	"github.com/yahoo/athenz/clients/go/zms"
-	athenz_domain "github.com/yahoo/k8s-athenz-syncer/pkg/apis/athenz/v1"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/client/clientset/versioned/fake"
-	athenzInformer "github.com/yahoo/k8s-athenz-syncer/pkg/client/informers/externalversions/athenz/v1"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
 	apiError "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"

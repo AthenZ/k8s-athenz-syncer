@@ -22,8 +22,8 @@ import (
 	"context"
 	"time"
 
-	v1 "github.com/yahoo/k8s-athenz-syncer/pkg/apis/athenz/v1"
-	scheme "github.com/yahoo/k8s-athenz-syncer/pkg/client/clientset/versioned/scheme"
+	v1 "github.com/AthenZ/k8s-athenz-syncer/pkg/apis/athenz/v1"
+	scheme "github.com/AthenZ/k8s-athenz-syncer/pkg/client/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"

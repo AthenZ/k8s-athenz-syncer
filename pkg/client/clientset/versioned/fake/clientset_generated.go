@@ -19,9 +19,9 @@ limitations under the License.
 package fake
 
 import (
-	clientset "github.com/yahoo/k8s-athenz-syncer/pkg/client/clientset/versioned"
-	athenzv1 "github.com/yahoo/k8s-athenz-syncer/pkg/client/clientset/versioned/typed/athenz/v1"
-	fakeathenzv1 "github.com/yahoo/k8s-athenz-syncer/pkg/client/clientset/versioned/typed/athenz/v1/fake"
+	clientset "github.com/AthenZ/k8s-athenz-syncer/pkg/client/clientset/versioned"
+	athenzv1 "github.com/AthenZ/k8s-athenz-syncer/pkg/client/clientset/versioned/typed/athenz/v1"
+	fakeathenzv1 "github.com/AthenZ/k8s-athenz-syncer/pkg/client/clientset/versioned/typed/athenz/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

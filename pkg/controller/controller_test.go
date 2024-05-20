@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,13 +26,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/AthenZ/athenz/clients/go/zms"
+	athenz_domain "github.com/AthenZ/k8s-athenz-syncer/pkg/apis/athenz/v1"
+	"github.com/AthenZ/k8s-athenz-syncer/pkg/client/clientset/versioned/fake"
+	"github.com/AthenZ/k8s-athenz-syncer/pkg/cron"
+	"github.com/AthenZ/k8s-athenz-syncer/pkg/util"
 	"github.com/ardielle/ardielle-go/rdl"
 	"github.com/google/go-cmp/cmp"
-	"github.com/yahoo/athenz/clients/go/zms"
-	athenz_domain "github.com/yahoo/k8s-athenz-syncer/pkg/apis/athenz/v1"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/client/clientset/versioned/fake"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/cron"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/util"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 )
 
@@ -161,7 +161,7 @@ func TestDeepCopy(t *testing.T) {
 	}
 }
 
-//TestZmsGetSignedDomains - test zms API call to get signed domains
+// TestZmsGetSignedDomains - test zms API call to get signed domains
 func TestZmsGetSignedDomains(t *testing.T) {
 	d := getFakeDomain()
 	signedDomain := zms.SignedDomains{

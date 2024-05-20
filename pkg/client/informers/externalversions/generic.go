@@ -21,7 +21,7 @@ package externalversions
 import (
 	"fmt"
 
-	v1 "github.com/yahoo/k8s-athenz-syncer/pkg/apis/athenz/v1"
+	v1 "github.com/AthenZ/k8s-athenz-syncer/pkg/apis/athenz/v1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )

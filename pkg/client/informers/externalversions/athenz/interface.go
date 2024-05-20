@@ -19,8 +19,8 @@ limitations under the License.
 package athenz
 
 import (
-	v1 "github.com/yahoo/k8s-athenz-syncer/pkg/client/informers/externalversions/athenz/v1"
-	internalinterfaces "github.com/yahoo/k8s-athenz-syncer/pkg/client/informers/externalversions/internalinterfaces"
+	v1 "github.com/AthenZ/k8s-athenz-syncer/pkg/client/informers/externalversions/athenz/v1"
+	internalinterfaces "github.com/AthenZ/k8s-athenz-syncer/pkg/client/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to each of this group's versions.

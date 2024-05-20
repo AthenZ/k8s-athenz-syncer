@@ -21,7 +21,7 @@ package fake
 import (
 	"context"
 
-	athenzv1 "github.com/yahoo/k8s-athenz-syncer/pkg/apis/athenz/v1"
+	athenzv1 "github.com/AthenZ/k8s-athenz-syncer/pkg/apis/athenz/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
