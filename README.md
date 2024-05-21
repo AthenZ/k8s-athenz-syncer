@@ -1,7 +1,7 @@
 # k8s-athenz-syncer
 
 K8s-athenz-syncer is a controller that synchronizes the [Athenz](https://athenz.io) domain data including the roles, services and policies
-into corresponding Kubernetes [AthenzDomain](https://github.com/AthenZ/k8s-athenz-istio-auth/tree/master/pkg) custom resources.
+into corresponding Kubernetes [AthenzDomain](https://github.com/yahoo/k8s-athenz-istio-auth/tree/master/pkg) custom resources.
 
 ### Architecture
 <p align="center">
@@ -56,7 +56,7 @@ While Athenz ZMS provides APIs to perform resource access checks against user/cl
 policies as Kubernetes resources allows any in-cluster auth provider service to perform in-memory validation of user or
 client credentials without worrying about the Athenz ZMS/ZTS service availability.
 
-K8s-athenz-syncer calls Athenz ZMS API [GetSignedDomains() API](https://github.com/AthenZ/athenz/blob/master/ui/rdl-api.md#getsigneddomainsobj-functionerr-json-response--) to fetch the entire contents of an Athenz domain signed by the ZMS including roles, principals and policies with signatures and creates Kubernetes Custom Resources that store the domain data in the cluster so that applications can do the security checks based on local cached data.
+K8s-athenz-syncer calls Athenz ZMS API [GetSignedDomains() API](https://github.com/yahoo/athenz/blob/master/ui/rdl-api.md#getsigneddomainsobj-functionerr-json-response--) to fetch the entire contents of an Athenz domain signed by the ZMS including roles, principals and policies with signatures and creates Kubernetes Custom Resources that store the domain data in the cluster so that applications can do the security checks based on local cached data.
 
 The controller also runs a cron that periodically fetches the list of Athenz domains that were modified during the cron
 interval and then fetches the signed contents for each domain and stores them as the AthenzDomain Custom Resource in the cluster in order to keep all policies in local cache updated. There is also a full resync cron that adds all the watched namespaces to the controller work queue so that all of Kubernetes AthenzDomains Custom Resources are resynced after a full resync interval.
@@ -112,7 +112,7 @@ items:
 There are a variety of prerequisites required in order to run this controller, they are specified below.
 - **Kubernetes cluster** - A running Kubernetes cluster is required to run the controller. More information on how to setup a cluster can be found in the official documentation [here](https://kubernetes.io/docs/setup/). This controller was developed and tested with the 1.13 release.
 - **Athenz** - Athenz is required for the controller to fetch policy and domain data. More information and setup steps can be found [here](http://www.athenz.io/). The authorization management service (ZMS) and its apis are primarily used for this controller.
-- **SIA Provider** - A service identity agent (SIA) must be running in the Kubernetes cluster in order to provision X.509 certificates to instances in order to authenticate with Athenz. The approach we currently use in production can be found [here](https://github.com/AthenZ/k8s-athenz-identity).
+- **SIA Provider** - A service identity agent (SIA) must be running in the Kubernetes cluster in order to provision X.509 certificates to instances in order to authenticate with Athenz. The approach we currently use in production can be found [here](https://github.com/yahoo/k8s-athenz-identity).
 
 ### Setup
 Configuration files which must be applied to run k8s-athenz-syncer which can be found in the k8s directory.
