@@ -16,8 +16,8 @@ limitations under the License.
 package v1
 
 import (
-	"github.com/AthenZ/athenz/clients/go/zms"
 	"github.com/mohae/deepcopy"
+	"github.com/AthenZ/athenz/clients/go/zms"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
