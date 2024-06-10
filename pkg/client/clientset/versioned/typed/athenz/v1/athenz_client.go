@@ -19,8 +19,8 @@ limitations under the License.
 package v1
 
 import (
-	v1 "github.com/yahoo/k8s-athenz-syncer/pkg/apis/athenz/v1"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/client/clientset/versioned/scheme"
+	v1 "github.com/AthenZ/k8s-athenz-syncer/pkg/apis/athenz/v1"
+	"github.com/AthenZ/k8s-athenz-syncer/pkg/client/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
 

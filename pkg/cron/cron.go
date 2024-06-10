@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/AthenZ/athenz/clients/go/zms"
+	"github.com/AthenZ/k8s-athenz-syncer/pkg/cr"
+	"github.com/AthenZ/k8s-athenz-syncer/pkg/log"
+	"github.com/AthenZ/k8s-athenz-syncer/pkg/util"
 	"github.com/cenkalti/backoff"
-	"github.com/yahoo/athenz/clients/go/zms"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/cr"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	apiError "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -96,7 +96,8 @@ func notifyOnErr(err error, backoffDelay time.Duration) {
 // RequestCall - ZMS call for update crons
 func (c *Cron) requestCall() error {
 	master := false
-	domains, etag, err := c.zmsClient.GetSignedDomains("", "true", "", &master, c.etag)
+	conditions := false
+	domains, etag, err := c.zmsClient.GetSignedDomains("", "true", "", &master, &conditions, c.etag)
 	if err != nil {
 		return fmt.Errorf("Error getting latest updated domains from ZMS API. Error: %v", err)
 	}

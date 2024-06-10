@@ -18,8 +18,8 @@ package filewatcher
 import (
 	"path/filepath"
 
+	"github.com/AthenZ/k8s-athenz-syncer/pkg/log"
 	"github.com/fsnotify/fsnotify"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
 )
 
 // workers type: map[string][]string

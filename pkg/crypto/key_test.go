@@ -19,8 +19,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/test"
+	"github.com/AthenZ/k8s-athenz-syncer/pkg/log"
+	"github.com/AthenZ/k8s-athenz-syncer/pkg/test"
 )
 
 const (

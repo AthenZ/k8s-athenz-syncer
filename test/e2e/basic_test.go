@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yahoo/athenz/clients/go/zms"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
-	"github.com/yahoo/k8s-athenz-syncer/test/e2e/framework"
+	"github.com/AthenZ/athenz/clients/go/zms"
+	"github.com/AthenZ/k8s-athenz-syncer/pkg/log"
+	"github.com/AthenZ/k8s-athenz-syncer/test/e2e/framework"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"

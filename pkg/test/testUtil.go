@@ -23,7 +23,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
+	"github.com/AthenZ/k8s-athenz-syncer/pkg/log"
 )
 
 const (

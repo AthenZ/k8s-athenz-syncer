@@ -23,10 +23,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/AthenZ/k8s-athenz-syncer/pkg/filewatcher"
+	"github.com/AthenZ/k8s-athenz-syncer/pkg/log"
 	"github.com/pkg/errors"
 	"github.com/tevino/abool"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/filewatcher"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
 )
 
 // CertReloader reloads the (key, cert) pair from the filesystem when

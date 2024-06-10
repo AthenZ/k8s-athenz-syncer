@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	athenzv1 "github.com/yahoo/k8s-athenz-syncer/pkg/apis/athenz/v1"
+	athenzv1 "github.com/AthenZ/k8s-athenz-syncer/pkg/apis/athenz/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

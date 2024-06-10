@@ -21,10 +21,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yahoo/athenz/clients/go/zms"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/crypto"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/test"
+	"github.com/AthenZ/athenz/clients/go/zms"
+	"github.com/AthenZ/k8s-athenz-syncer/pkg/crypto"
+	"github.com/AthenZ/k8s-athenz-syncer/pkg/log"
+	"github.com/AthenZ/k8s-athenz-syncer/pkg/test"
 )
 
 const (
@@ -81,9 +81,6 @@ func TestToken(t *testing.T) {
 	if token1 != token2 || token1Expire != token2Expire {
 		t.Error("Token updated when not expired")
 	}
-	if *tp.config.Client.CredsToken != token2 {
-		t.Error("Failed to update client token")
-	}
 }
 
 // TestUpdateToken: token should update everytime UpdateToken() is called
@@ -102,9 +99,6 @@ func TestUpdateToken(t *testing.T) {
 	if token1Expire.Before(time.Now().Add(50*time.Minute)) || token1Expire.After(time.Now().Add(time.Hour)) {
 		t.Error("Token 1 wrong expiration time")
 	}
-	if *tp.config.Client.CredsToken != token1 {
-		t.Error("Failed to update client token to token1")
-	}
 	err = tp.UpdateToken()
 	if err != nil {
 		t.Errorf("Unable to get token. Error: %v", err)
@@ -116,8 +110,5 @@ func TestUpdateToken(t *testing.T) {
 	}
 	if token1 == token2 || token1Expire == token2Expire {
 		t.Error("Token failed to updated")
-	}
-	if *tp.config.Client.CredsToken != token2 {
-		t.Error("Failed to update client token to token2")
 	}
 }

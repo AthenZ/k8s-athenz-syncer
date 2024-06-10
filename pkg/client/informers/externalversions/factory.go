@@ -23,9 +23,9 @@ import (
 	sync "sync"
 	time "time"
 
-	versioned "github.com/yahoo/k8s-athenz-syncer/pkg/client/clientset/versioned"
-	athenz "github.com/yahoo/k8s-athenz-syncer/pkg/client/informers/externalversions/athenz"
-	internalinterfaces "github.com/yahoo/k8s-athenz-syncer/pkg/client/informers/externalversions/internalinterfaces"
+	versioned "github.com/AthenZ/k8s-athenz-syncer/pkg/client/clientset/versioned"
+	athenz "github.com/AthenZ/k8s-athenz-syncer/pkg/client/informers/externalversions/athenz"
+	internalinterfaces "github.com/AthenZ/k8s-athenz-syncer/pkg/client/informers/externalversions/internalinterfaces"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

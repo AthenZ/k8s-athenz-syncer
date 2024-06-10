@@ -17,7 +17,7 @@ package v1
 
 import (
 	"github.com/mohae/deepcopy"
-	"github.com/yahoo/athenz/clients/go/zms"
+	"github.com/AthenZ/athenz/clients/go/zms"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -39,7 +39,7 @@ type AthenzDomain struct {
 	Spec AthenzDomainSpec `json:"spec,omitempty"`
 }
 
-// AthenzDomainSpec contains the SignedDomain object https://github.com/yahoo/athenz/clients/go/zms
+// AthenzDomainSpec contains the SignedDomain object https://github.com/AthenZ/athenz/clients/go/zms
 type AthenzDomainSpec struct {
 	zms.SignedDomain `json:",inline"`
 }

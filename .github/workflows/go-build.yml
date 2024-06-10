@@ -1,0 +1,33 @@
+name: Go Build
+run-name: ${{ github.actor }} runs build
+on:
+  push:
+    branches:
+    - master 
+  pull_request:
+    branches:
+    - master
+jobs:
+  build-k8s-athenz-syncer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Go 1.22.x
+        uses: actions/setup-go@v5
+        with:
+          # Semantic version range syntax or exact version of Go
+          go-version: '1.22.x'
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+      - name: List files in the repository
+        run: |
+          ls ${{ github.workspace }}
+      - name: Run tests
+        run: go test -v -race ./...
+      - name: Print diff
+        run: diff -u <(echo -n) <(gofmt -d .) || true
+      - name: Go vet
+        run: go vet ./...
+      - name: Go build 
+        run: go build -v -race ./...
+      - run: echo "🍏 This job's status is ${{ job.status }}."

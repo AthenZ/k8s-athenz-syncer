@@ -21,7 +21,7 @@ package versioned
 import (
 	"fmt"
 
-	athenzv1 "github.com/yahoo/k8s-athenz-syncer/pkg/client/clientset/versioned/typed/athenz/v1"
+	athenzv1 "github.com/AthenZ/k8s-athenz-syncer/pkg/client/clientset/versioned/typed/athenz/v1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"

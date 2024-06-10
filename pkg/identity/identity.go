@@ -16,11 +16,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/AthenZ/athenz/clients/go/zms"
+	"github.com/AthenZ/athenz/libs/go/zmssvctoken"
+	"github.com/AthenZ/k8s-athenz-syncer/pkg/crypto"
+	"github.com/AthenZ/k8s-athenz-syncer/pkg/log"
 	"github.com/pkg/errors"
-	"github.com/yahoo/athenz/clients/go/zms"
-	"github.com/yahoo/athenz/libs/go/zmssvctoken"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/crypto"
-	"github.com/yahoo/k8s-athenz-syncer/pkg/log"
 )
 
 const (
