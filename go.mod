@@ -1,6 +1,6 @@
 module github.com/AthenZ/k8s-athenz-syncer
 
-go 1.22.0
+go 1.22
 
 require (
 	github.com/AthenZ/athenz v1.11.59
