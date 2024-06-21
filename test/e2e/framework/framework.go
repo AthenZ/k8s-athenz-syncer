@@ -72,21 +72,21 @@ func setup(stopCh <-chan struct{}) error {
 	}
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
-		log.Errorf("error creating config: ", err)
+		log.Errorf("error creating config: %v", err)
 		return err
 	}
 
 	// set up k8s client
 	k8sclient, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		log.Errorf("Failed to create k8s client: ", err)
+		log.Errorf("Failed to create k8s client: %v", err)
 		return err
 	}
 
 	// set up athenzdomains client
 	athenzClient, err := athenzClientset.NewForConfig(config)
 	if err != nil {
-		log.Errorf("Failed to create athenz domains client: ", err)
+		log.Errorf("Failed to create athenz domains client: %v", err)
 		return err
 	}
 	// set up cr informer to get athenzdomains resources
@@ -105,7 +105,7 @@ func setup(stopCh <-chan struct{}) error {
 	// set up zms client
 	zmsclient, err := setupZMSClient(*key, *cert, *zmsURL)
 	if err != nil {
-		log.Errorf("Failed to create zms client: ", err)
+		log.Errorf("Failed to create zms client: %v", err)
 		return err
 	}
 	adminDomain := ""
@@ -148,13 +148,13 @@ func teardown() error {
 	f := Global
 	domain := zms.DomainName(f.RoleDomain)
 	roleName := zms.EntityName(f.RoleName)
-	err := f.ZMSClient.DeleteRole(domain, roleName, "")
+	err := f.ZMSClient.DeleteRole(domain, roleName, "", "")
 	if err != nil {
 		log.Errorf("Unable to delete test1 role: %v", err)
 		return err
 	}
 	trustroleName := zms.EntityName(f.TrustRole)
-	err = f.ZMSClient.DeleteRole(domain, trustroleName, "")
+	err = f.ZMSClient.DeleteRole(domain, trustroleName, "", "")
 	if err != nil {
 		log.Errorf("Unable to delete test2 role: %v", err)
 		return err
