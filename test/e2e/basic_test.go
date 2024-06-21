@@ -35,7 +35,8 @@ func TestBasicRoleUpdate(t *testing.T) {
 	role := zms.Role{
 		Name: roleResource,
 	}
-	err = f.ZMSClient.PutRole(domain, roleName, "", &role)
+	condition := false
+	_, err = f.ZMSClient.PutRole(domain, roleName, "", &condition, "", &role)
 	if err != nil {
 		log.Errorf("test 1 error adding regular role: %v", err)
 		t.Errorf("Unable to add role")
@@ -105,7 +106,8 @@ func TestTrustDomain(t *testing.T) {
 		Name:  trustroleResource,
 		Trust: trustdomain,
 	}
-	err = f.ZMSClient.PutRole(domain, trustroleName, "", &trustRole)
+	condition := false
+	_, err = f.ZMSClient.PutRole(domain, trustroleName, "", &condition, "", &trustRole)
 	if err != nil {
 		log.Errorf("test 2 unable to add trust role: %v", err)
 		t.Error("Unable to add trust role")
