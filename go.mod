@@ -2,6 +2,8 @@ module github.com/AthenZ/k8s-athenz-syncer
 
 go 1.22.0
 
+toolchain go1.22.4
+
 require (
 	github.com/AthenZ/athenz v1.11.59
 	github.com/ardielle/ardielle-go v1.5.2
