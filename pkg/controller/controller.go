@@ -296,8 +296,7 @@ func (c *Controller) sync(domain string) error {
 func (c *Controller) zmsGetSignedDomains(domain string) (*zms.SignedDomains, bool, error) {
 	d := zms.DomainName(domain)
 	master := false
-	conditions := false
-	signedDomain, _, err := c.zmsClient.GetSignedDomains(d, "", "", &master, &conditions, "")
+	signedDomain, _, err := c.zmsClient.GetSignedDomains(d, "", "", &master, "")
 	if err != nil {
 		return nil, false, err
 	}
