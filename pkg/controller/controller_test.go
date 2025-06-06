@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -45,7 +45,7 @@ func newController() *Controller {
 	athenzclientset := fake.NewSimpleClientset()
 	clientset := k8sfake.NewSimpleClientset()
 	zmsclient := zms.NewClient("https://zms.athenz.com", &http.Transport{})
-	util := util.NewUtil("admin.domain", []string{"kube-system", "kube-public", "kube-test"})
+	util := util.NewUtil("admin.domain", []string{"kube-system", "kube-public", "kube-test"}, []string{"acceptance-test"})
 	cm := &cron.AthenzContactTimeConfigMap{
 		Namespace: "kube-yahoo",
 		Name:      "athenzcall-config",
@@ -161,7 +161,7 @@ func TestDeepCopy(t *testing.T) {
 	}
 }
 
-//TestZmsGetSignedDomains - test zms API call to get signed domains
+// TestZmsGetSignedDomains - test zms API call to get signed domains
 func TestZmsGetSignedDomains(t *testing.T) {
 	d := getFakeDomain()
 	signedDomain := zms.SignedDomains{

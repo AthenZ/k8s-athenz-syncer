@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,15 +23,22 @@ import (
 
 // Util - struct with 2 fields adminDomain and list of system namespaces
 type Util struct {
-	adminDomain      string
-	systemNamespaces []string
+	adminDomain       string
+	systemNamespaces  []string
+	excludeNamespaces map[string]bool
 }
 
 // NewUtil - create new Util object
-func NewUtil(adminDomain string, systemNamespaces []string) *Util {
+func NewUtil(adminDomain string, systemNamespaces []string, excludeNamespaces []string) *Util {
+	excludedNamespaceMap := make(map[string]bool)
+	for _, ns := range excludeNamespaces {
+		excludedNamespaceMap[ns] = true
+	}
+
 	return &Util{
-		adminDomain:      adminDomain,
-		systemNamespaces: systemNamespaces,
+		adminDomain:       adminDomain,
+		systemNamespaces:  systemNamespaces,
+		excludeNamespaces: excludedNamespaceMap,
 	}
 }
 
@@ -74,6 +81,14 @@ func (u *Util) IsSystemDomain(domain string) bool {
 		if domain == sysDomain {
 			return true
 		}
+	}
+	return false
+}
+
+// IsNamespaceExcluded - check if the current namespace is in the skip namespaces list
+func (u *Util) IsNamespaceExcluded(ns string) bool {
+	if _, ok := u.excludeNamespaces[ns]; ok {
+		return true
 	}
 	return false
 }

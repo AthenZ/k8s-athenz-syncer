@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -121,6 +121,10 @@ func (c *Controller) nsinformerhandler(fn cache.KeyFunc, obj interface{}) string
 	if err != nil {
 		log.Errorf("Error returned from Key Func in nsInformerHandler. Error: %v", err)
 		return ""
+	}
+	if c.util.IsNamespaceExcluded(key) {
+		log.Infof("Skip processing excluded namespace: %s", key)
+		return key
 	}
 	domain := c.util.NamespaceToDomain(key)
 	c.queue.AddRateLimited(domain)

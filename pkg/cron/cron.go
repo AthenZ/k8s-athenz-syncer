@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -148,6 +148,10 @@ func (c *Cron) FullResync(stopCh <-chan struct{}) {
 				namespace, ok := ns.(*corev1.Namespace)
 				if !ok {
 					log.Error("Error occurred when casting namespace into string")
+					continue
+				}
+				if c.util.IsNamespaceExcluded(namespace.ObjectMeta.Name) {
+					log.Infof("Skip processing excluded namespace: %s", namespace.ObjectMeta.Name)
 					continue
 				}
 				domainName := c.util.NamespaceToDomain(namespace.ObjectMeta.Name)
