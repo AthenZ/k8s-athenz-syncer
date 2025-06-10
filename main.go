@@ -125,7 +125,7 @@ func main() {
 	secretName := flag.String("secret-name", "k8s-athenz-syncer", "secret name that contains private key")
 	header := flag.String("auth-header", "", "Authentication header field")
 	nTokenExpireTime := flag.String("ntoken-expiry", "1h0m0s", "Custom nToken expiration duration")
-	excludeNamespaces := flag.String("exclude-namespaces", "", "Namespaces to exclude from processing")
+	excludeNamespaces := flag.String("exclude-namespaces", "", "Namespaces to exclude from processing ex: 'kube-system,kube-public,acceptance-test'")
 
 	klog.InitFlags(nil)
 	flag.Set("logtostderr", "false")
@@ -196,6 +196,7 @@ func main() {
 	excludeNSList := strings.Split(*excludeNamespaces, ",")
 	exclusionList := []string{}
 	for _, item := range excludeNSList {
+		item := strings.TrimSpace(item)
 		if item != "" {
 			exclusionList = append(exclusionList, item)
 		}
