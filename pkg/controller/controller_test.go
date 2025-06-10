@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,6 +19,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -30,10 +31,12 @@ import (
 	athenz_domain "github.com/AthenZ/k8s-athenz-syncer/pkg/apis/athenz/v1"
 	"github.com/AthenZ/k8s-athenz-syncer/pkg/client/clientset/versioned/fake"
 	"github.com/AthenZ/k8s-athenz-syncer/pkg/cron"
+	"github.com/AthenZ/k8s-athenz-syncer/pkg/log"
 	"github.com/AthenZ/k8s-athenz-syncer/pkg/util"
 	"github.com/ardielle/ardielle-go/rdl"
 	"github.com/google/go-cmp/cmp"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/util/workqueue"
 )
 
 const (
@@ -45,7 +48,7 @@ func newController() *Controller {
 	athenzclientset := fake.NewSimpleClientset()
 	clientset := k8sfake.NewSimpleClientset()
 	zmsclient := zms.NewClient("https://zms.athenz.com", &http.Transport{})
-	util := util.NewUtil("admin.domain", []string{"kube-system", "kube-public", "kube-test"})
+	util := util.NewUtil("admin.domain", []string{"kube-system", "kube-public", "kube-test"}, []string{"acceptance-test"})
 	cm := &cron.AthenzContactTimeConfigMap{
 		Namespace: "kube-yahoo",
 		Name:      "athenzcall-config",
@@ -161,7 +164,7 @@ func TestDeepCopy(t *testing.T) {
 	}
 }
 
-//TestZmsGetSignedDomains - test zms API call to get signed domains
+// TestZmsGetSignedDomains - test zms API call to get signed domains
 func TestZmsGetSignedDomains(t *testing.T) {
 	d := getFakeDomain()
 	signedDomain := zms.SignedDomains{
@@ -203,4 +206,77 @@ func testingHTTPClient(handler http.Handler) (*http.Client, func()) {
 	}
 
 	return cli, s.Close
+}
+func TestNsinformerhandler(t *testing.T) {
+	log.InitLogger("/tmp/log/test.log", "info")
+
+	tests := []struct {
+		name             string
+		keyFunc          func(obj interface{}) (string, error)
+		excludedNS       []string
+		expectedResult   string
+		expectedQueueLen int
+		shouldAddToQueue bool
+	}{
+		{
+			name: "Error from key function",
+			keyFunc: func(obj interface{}) (string, error) {
+				return "", fmt.Errorf("mock key function error")
+			},
+			excludedNS:       []string{},
+			expectedResult:   "",
+			expectedQueueLen: 0,
+			shouldAddToQueue: false,
+		},
+		{
+			name: "Excluded namespace",
+			keyFunc: func(obj interface{}) (string, error) {
+				return "test-excluded", nil
+			},
+			excludedNS:       []string{"test-excluded"},
+			expectedResult:   "test-excluded",
+			expectedQueueLen: 0,
+			shouldAddToQueue: false,
+		},
+		{
+			name: "Non-excluded namespace gets added to queue",
+			keyFunc: func(obj interface{}) (string, error) {
+				return "test-namespace", nil
+			},
+			excludedNS:       []string{},
+			expectedResult:   "test-namespace",
+			expectedQueueLen: 1,
+			shouldAddToQueue: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newController()
+			c.util = util.NewUtil("admin.domain", []string{"kube-system"}, tt.excludedNS)
+			mockQueue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+			c.queue = mockQueue
+
+			result := c.nsinformerhandler(tt.keyFunc, &athenz_domain.AthenzDomain{})
+
+			if result != tt.expectedResult {
+				t.Errorf("Expected result '%s', got: '%s'", tt.expectedResult, result)
+			}
+
+			// Sleep to allow item to be queued
+			time.Sleep(2 * time.Second)
+
+			if mockQueue.Len() != tt.expectedQueueLen {
+				t.Errorf("Expected queue length to be %d, got %d", tt.expectedQueueLen, mockQueue.Len())
+			}
+
+			if tt.shouldAddToQueue && mockQueue.Len() > 0 {
+				expectedDomain := c.util.NamespaceToDomain(tt.expectedResult)
+				item, _ := mockQueue.Get()
+				if item != expectedDomain {
+					t.Errorf("Expected %s in queue, got %s", expectedDomain, item)
+				}
+			}
+		})
+	}
 }

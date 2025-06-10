@@ -125,6 +125,7 @@ func main() {
 	secretName := flag.String("secret-name", "k8s-athenz-syncer", "secret name that contains private key")
 	header := flag.String("auth-header", "", "Authentication header field")
 	nTokenExpireTime := flag.String("ntoken-expiry", "1h0m0s", "Custom nToken expiration duration")
+	excludeNamespaces := flag.String("exclude-namespaces", "", "Namespaces to exclude from processing ex: 'kube-system,kube-public,acceptance-test'")
 
 	klog.InitFlags(nil)
 	flag.Set("logtostderr", "false")
@@ -190,7 +191,17 @@ func main() {
 			processList = append(processList, item)
 		}
 	}
-	util := util.NewUtil(*adminDomain, processList)
+
+	// process skip namespaces input string
+	excludeNSList := strings.Split(*excludeNamespaces, ",")
+	exclusionList := []string{}
+	for _, item := range excludeNSList {
+		item := strings.TrimSpace(item)
+		if item != "" {
+			exclusionList = append(exclusionList, item)
+		}
+	}
+	util := util.NewUtil(*adminDomain, processList, exclusionList)
 
 	// construct the Controller object which has all of the necessary components to
 	// handle logging, connections, informing (listing and watching), the queue,

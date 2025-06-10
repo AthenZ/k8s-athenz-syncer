@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,7 @@ import (
 )
 
 func newUtil() *Util {
-	return NewUtil("admin.domain", []string{"kube-system", "kube-public", "kube-test"})
+	return NewUtil("admin.domain", []string{"kube-system", "kube-public", "kube-test"}, []string{"acceptance-test"})
 }
 
 // TestNamespaceConversion - test conversion function
@@ -111,5 +111,20 @@ func TestGetSystemNSDomains(t *testing.T) {
 		if result[i] != ans[i] {
 			t.Error("GetSystemNSDomains returned the wrong system domain " + result[i])
 		}
+	}
+}
+
+// TestIsNamespaceExcluded - test whether certain namespace is in the skip namespaces list
+func TestIsNamespaceExcluded(t *testing.T) {
+	u := newUtil()
+	test1 := "acceptance-test"
+	result1 := u.IsNamespaceExcluded(test1)
+	if !result1 {
+		t.Error("test1 failed. acceptance-test is in the skip namespaces list!")
+	}
+	test2 := "kube-system"
+	result2 := u.IsNamespaceExcluded(test2)
+	if result2 {
+		t.Error("test2 failed. kube-system is not in the skip namespaces list!")
 	}
 }
