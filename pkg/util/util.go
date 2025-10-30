@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/AthenZ/athenz/clients/go/zms"
 )
 
 // Util - struct with 2 fields adminDomain and list of system namespaces
@@ -26,10 +28,11 @@ type Util struct {
 	adminDomain       string
 	systemNamespaces  []string
 	excludeNamespaces map[string]bool
+	excludeMSDRules   bool
 }
 
 // NewUtil - create new Util object
-func NewUtil(adminDomain string, systemNamespaces []string, excludeNamespaces []string) *Util {
+func NewUtil(adminDomain string, systemNamespaces []string, excludeNamespaces []string, excludeMSDRules bool) *Util {
 	excludedNamespaceMap := make(map[string]bool)
 	for _, ns := range excludeNamespaces {
 		excludedNamespaceMap[ns] = true
@@ -39,6 +42,7 @@ func NewUtil(adminDomain string, systemNamespaces []string, excludeNamespaces []
 		adminDomain:       adminDomain,
 		systemNamespaces:  systemNamespaces,
 		excludeNamespaces: excludedNamespaceMap,
+		excludeMSDRules:   excludeMSDRules,
 	}
 }
 
@@ -123,4 +127,46 @@ func HomeDir() string {
 		return h
 	}
 	return os.Getenv("USERPROFILE") // windows
+}
+
+func filterMSDRules(domain *zms.DomainData) *zms.DomainData {
+	domainName := string(domain.Name)
+	var filteredRoles []*zms.Role
+	var filteredPolicies []*zms.Policy
+	// Filter out roles where the names starts with "domainName:role.acl." which are MSD roles
+	// Filter out roles that start with "domainName:role.msd-read-role-"
+	for _, role := range domain.Roles {
+		roleName := string(role.Name)
+		aclPrefix := domainName + ":role.acl."
+		msdReadPrefix := domainName + ":role.msd-read-role-"
+		if (len(roleName) >= len(aclPrefix) && roleName[:len(aclPrefix)] == aclPrefix) ||
+			(len(roleName) >= len(msdReadPrefix) && roleName[:len(msdReadPrefix)] == msdReadPrefix) {
+			continue
+		}
+		filteredRoles = append(filteredRoles, role)
+	}
+	domain.Roles = filteredRoles
+
+	// Filter out policies start with "domainName:policy.acl." which are MSD policies
+	// Filter out policies start with "domainName:policy.msd-read-policy-"
+	for _, policy := range domain.Policies.Contents.Policies {
+		policyName := string(policy.Name)
+		aclPrefix := domainName + ":policy.acl."
+		msdReadPrefix := domainName + ":policy.msd-read-policy-"
+		if (len(policyName) >= len(aclPrefix) && policyName[:len(aclPrefix)] == aclPrefix) ||
+			(len(policyName) >= len(msdReadPrefix) && policyName[:len(msdReadPrefix)] == msdReadPrefix) {
+			continue
+		}
+		filteredPolicies = append(filteredPolicies, policy)
+	}
+	domain.Policies.Contents.Policies = filteredPolicies
+
+	return domain
+}
+
+func (u *Util) FilterMSDRules(domainData *zms.DomainData) *zms.DomainData {
+	if !u.excludeMSDRules {
+		return domainData
+	}
+	return filterMSDRules(domainData)
 }
