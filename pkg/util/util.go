@@ -139,8 +139,8 @@ func filterMSDRules(domain *zms.DomainData) *zms.DomainData {
 		roleName := string(role.Name)
 		aclPrefix := domainName + ":role.acl."
 		msdReadPrefix := domainName + ":role.msd-read-role-"
-		if (len(roleName) >= len(aclPrefix) && roleName[:len(aclPrefix)] == aclPrefix) ||
-			(len(roleName) >= len(msdReadPrefix) && roleName[:len(msdReadPrefix)] == msdReadPrefix) {
+		if strings.HasPrefix(roleName, aclPrefix) ||
+			strings.HasPrefix(roleName, msdReadPrefix) {
 			continue
 		}
 		filteredRoles = append(filteredRoles, role)
@@ -153,8 +153,8 @@ func filterMSDRules(domain *zms.DomainData) *zms.DomainData {
 		policyName := string(policy.Name)
 		aclPrefix := domainName + ":policy.acl."
 		msdReadPrefix := domainName + ":policy.msd-read-policy-"
-		if (len(policyName) >= len(aclPrefix) && policyName[:len(aclPrefix)] == aclPrefix) ||
-			(len(policyName) >= len(msdReadPrefix) && policyName[:len(msdReadPrefix)] == msdReadPrefix) {
+		if strings.HasPrefix(policyName, aclPrefix) ||
+			strings.HasPrefix(policyName, msdReadPrefix) {
 			continue
 		}
 		filteredPolicies = append(filteredPolicies, policy)
