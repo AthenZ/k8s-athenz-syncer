@@ -111,7 +111,7 @@ func setup(stopCh <-chan struct{}) error {
 	adminDomain := ""
 	systemNS := []string{}
 	excludedNS := []string{}
-	domainUtil := util.NewUtil(adminDomain, systemNS, excludedNS)
+	domainUtil := util.NewUtil(adminDomain, systemNS, excludedNS, false)
 
 	Global = &Framework{
 		K8sClient:       k8sclient,

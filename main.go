@@ -126,6 +126,7 @@ func main() {
 	header := flag.String("auth-header", "", "Authentication header field")
 	nTokenExpireTime := flag.String("ntoken-expiry", "1h0m0s", "Custom nToken expiration duration")
 	excludeNamespaces := flag.String("exclude-namespaces", "", "Namespaces to exclude from processing ex: 'kube-system,kube-public,acceptance-test'")
+	excludeMSDRules := flag.Bool("exclude-msd-rules", false, "Exclude MSD based role and policies when syncing Athenz domains")
 
 	klog.InitFlags(nil)
 	flag.Set("logtostderr", "false")
@@ -201,7 +202,7 @@ func main() {
 			exclusionList = append(exclusionList, item)
 		}
 	}
-	util := util.NewUtil(*adminDomain, processList, exclusionList)
+	util := util.NewUtil(*adminDomain, processList, exclusionList, *excludeMSDRules)
 
 	// construct the Controller object which has all of the necessary components to
 	// handle logging, connections, informing (listing and watching), the queue,

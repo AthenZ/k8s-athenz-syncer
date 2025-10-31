@@ -48,7 +48,7 @@ func newCron() *Cron {
 	clientset := k8sfake.NewSimpleClientset()
 	rateLimiter := ratelimiter.NewRateLimiter(250 * time.Millisecond)
 	queue := workqueue.NewRateLimitingQueue(rateLimiter)
-	util := util.NewUtil("test.domain", []string{"kube-system"}, []string{"acceptance-test"})
+	util := util.NewUtil("test.domain", []string{"kube-system"}, []string{"acceptance-test"}, false)
 	athenzclientset := fake.NewSimpleClientset()
 	informer := athenzInformer.NewAthenzDomainInformer(athenzclientset, 0, cache.Indexers{
 		"trustDomain": cr.TrustDomainIndexFunc,

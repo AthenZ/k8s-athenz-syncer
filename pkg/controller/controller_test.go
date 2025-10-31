@@ -48,7 +48,7 @@ func newController() *Controller {
 	athenzclientset := fake.NewSimpleClientset()
 	clientset := k8sfake.NewSimpleClientset()
 	zmsclient := zms.NewClient("https://zms.athenz.com", &http.Transport{})
-	util := util.NewUtil("admin.domain", []string{"kube-system", "kube-public", "kube-test"}, []string{"acceptance-test"})
+	util := util.NewUtil("admin.domain", []string{"kube-system", "kube-public", "kube-test"}, []string{"acceptance-test"}, false)
 	cm := &cron.AthenzContactTimeConfigMap{
 		Namespace: "kube-yahoo",
 		Name:      "athenzcall-config",
@@ -253,7 +253,7 @@ func TestNsinformerhandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := newController()
-			c.util = util.NewUtil("admin.domain", []string{"kube-system"}, tt.excludedNS)
+			c.util = util.NewUtil("admin.domain", []string{"kube-system"}, tt.excludedNS, false)
 			mockQueue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 			c.queue = mockQueue
 

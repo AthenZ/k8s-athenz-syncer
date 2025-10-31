@@ -310,5 +310,10 @@ func (c *Controller) zmsGetSignedDomains(domain string) (*zms.SignedDomains, boo
 		log.Error("SignedDomain call returned an empty list")
 		return nil, false, nil
 	}
+
+	for i := range signedDomain.Domains {
+		signedDomain.Domains[i].Domain = c.util.FilterMSDRules(signedDomain.Domains[i].Domain)
+	}
+
 	return signedDomain, true, nil
 }
