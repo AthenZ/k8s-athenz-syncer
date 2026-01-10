@@ -1,14 +1,18 @@
 kind: CustomResourceDefinition
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 metadata:
   name: athenzdomains.athenz.io
 spec:
   group: athenz.io
-  version: v1
+  versions:
+  - name: v1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        # Ignore unknown fields in the AthenzDomain spec, as it could be a bit complex:
+        x-kubernetes-preserve-unknown-fields: true
   scope: Cluster
   names:
     plural: athenzdomains
-    singular: athenzdomain
-    kind: AthenzDomain
-    shortNames:
-    - domain
