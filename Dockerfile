@@ -12,10 +12,9 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o k8s-athen
 # Final stage: minimal runtime image
 FROM alpine:latest
 
-# Install CA certificates and timezone data (Essential for logs and HTTPS)
-RUN apk --no-cache add ca-certificates tzdata
-WORKDIR /
+RUN apk --no-cache add ca-certificates
 
+WORKDIR /
 COPY --from=builder /workspace/k8s-athenz-syncer /usr/bin/k8s-athenz-syncer
 
 # TODO: Consider using a non-root user for better security practices
