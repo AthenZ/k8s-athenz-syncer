@@ -17,9 +17,7 @@ COPY . .
 # -o manager: Explicitly name the output binary
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o manager .
 
-# 2. Run Stage
-# Use a specific tag for stability rather than 'latest'
-FROM alpine:3.23
+FROM alpine:latest
 
 # Install CA certificates and timezone data (Essential for logs and HTTPS)
 RUN apk --no-cache add ca-certificates tzdata
