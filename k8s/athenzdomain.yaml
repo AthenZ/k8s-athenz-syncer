@@ -16,3 +16,7 @@ spec:
   scope: Cluster
   names:
     plural: athenzdomains
+    singular: athenzdomain
+    kind: AthenzDomain
+    shortNames:
+    - domain
